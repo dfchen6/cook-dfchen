@@ -1,0 +1,20 @@
+{
+  "nav": {
+    "recipes": "Recipes",
+    "mealPlan": "Meal Plan",
+    "login": "Login"
+  },
+  "recipe": {
+    "ingredients": "Ingredients",
+    "instructions": "Instructions",
+    "servings": "Servings",
+    "prepTime": "Prep Time",
+    "cookTime": "Cook Time",
+    "addToMealPlan": "Add to Meal Plan",
+    "mins": "min"
+  },
+  "recipelist": {
+    "title": "Recipes",
+    "empty": "No recipes yet."
+  }
+}

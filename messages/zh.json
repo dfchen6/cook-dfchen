@@ -1,0 +1,20 @@
+{
+  "nav": {
+    "recipes": "食谱",
+    "mealPlan": "饮食计划",
+    "login": "登录"
+  },
+  "recipe": {
+    "ingredients": "食材",
+    "instructions": "步骤",
+    "servings": "份量",
+    "prepTime": "准备时间",
+    "cookTime": "烹饪时间",
+    "addToMealPlan": "加入饮食计划",
+    "mins": "分钟"
+  },
+  "recipelist": {
+    "title": "食谱",
+    "empty": "暂无食谱。"
+  }
+}
