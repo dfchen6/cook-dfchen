@@ -1,11 +1,10 @@
-'use client';
-
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import LocaleToggle from './LocaleToggle';
+import NavAuth from './NavAuth';
 
-export default function Nav({ locale }: { locale: string }) {
-  const t = useTranslations('nav');
+export default async function Nav({ locale }: { locale: string }) {
+  const t = await getTranslations('nav');
 
   return (
     <header className="border-b border-stone-200 bg-white">
@@ -13,7 +12,7 @@ export default function Nav({ locale }: { locale: string }) {
         <Link href={`/${locale}`} className="text-xl font-semibold tracking-tight">
           🍳 cook.dfchen.com
         </Link>
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-4">
           <Link href={`/${locale}`} className="text-sm text-stone-600 hover:text-stone-900">
             {t('recipes')}
           </Link>
@@ -21,6 +20,7 @@ export default function Nav({ locale }: { locale: string }) {
             {t('mealPlan')}
           </Link>
           <LocaleToggle locale={locale} />
+          <NavAuth locale={locale} />
         </nav>
       </div>
     </header>
