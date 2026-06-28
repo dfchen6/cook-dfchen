@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import IngredientList from '@/components/IngredientList';
+import AddToMealPlan from '@/components/AddToMealPlan';
 import Image from 'next/image';
 import type { RecipeWithIngredients } from '@/lib/supabase/types';
 
@@ -14,13 +15,16 @@ export default async function RecipeDetailPage({
   const t = await getTranslations('recipe');
   const supabase = await createClient();
 
-  const { data: recipe } = await supabase
-    .from('recipes')
-    .select('*, ingredients(*)')
-    .eq('slug', slug)
-    .order('sort_order', { referencedTable: 'ingredients', ascending: true })
-    .returns<RecipeWithIngredients[]>()
-    .single();
+  const [{ data: recipe }, { data: { user } }] = await Promise.all([
+    supabase
+      .from('recipes')
+      .select('*, ingredients(*)')
+      .eq('slug', slug)
+      .order('sort_order', { referencedTable: 'ingredients', ascending: true })
+      .returns<RecipeWithIngredients[]>()
+      .single(),
+    supabase.auth.getUser(),
+  ]);
 
   if (!recipe) notFound();
 
@@ -81,6 +85,11 @@ export default async function RecipeDetailPage({
           ))}
         </div>
       )}
+
+      {/* Add to Meal Plan */}
+      <div className="mt-10 border-t border-stone-100 pt-8">
+        <AddToMealPlan recipeId={recipe.id} loggedIn={!!user} locale={locale} />
+      </div>
     </article>
   );
 }

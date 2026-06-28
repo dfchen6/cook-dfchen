@@ -16,5 +16,8 @@
   "recipelist": {
     "title": "Recipes",
     "empty": "No recipes yet."
+  },
+  "mealPlan": {
+    "title": "Meal Plan"
   }
 }

@@ -16,5 +16,8 @@
   "recipelist": {
     "title": "食谱",
     "empty": "暂无食谱。"
+  },
+  "mealPlan": {
+    "title": "饮食计划"
   }
 }
