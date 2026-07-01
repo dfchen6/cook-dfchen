@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import '../globals.css';
 import Nav from '@/components/Nav';
+import ThemeProvider from '@/components/ThemeProvider';
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
 
@@ -30,12 +31,14 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={geist.variable}>
-      <body className="min-h-screen bg-stone-50 text-stone-900 antialiased">
-        <NextIntlClientProvider messages={messages}>
-          <Nav locale={locale} />
-          <main className="mx-auto max-w-4xl px-4 py-8">{children}</main>
-        </NextIntlClientProvider>
+    <html lang={locale} className={geist.variable} suppressHydrationWarning>
+      <body className="min-h-screen bg-stone-50 text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100">
+        <ThemeProvider>
+          <NextIntlClientProvider messages={messages}>
+            <Nav locale={locale} />
+            <main className="mx-auto max-w-4xl px-4 py-8">{children}</main>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

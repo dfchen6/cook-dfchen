@@ -19,7 +19,7 @@ export default function NavAuthClient({
     return (
       <Link
         href={`/${locale}/login`}
-        className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700"
+        className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
       >
         登录 · Login
       </Link>

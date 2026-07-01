@@ -16,7 +16,7 @@ export default function LocaleToggle({ locale }: { locale: string }) {
   return (
     <button
       onClick={toggle}
-      className="rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-600 hover:border-stone-500 hover:text-stone-900"
+      className="rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-600 hover:border-stone-500 hover:text-stone-900 dark:border-stone-600 dark:text-stone-400 dark:hover:border-stone-400 dark:hover:text-stone-100"
     >
       {locale === 'zh' ? 'EN' : '中文'}
     </button>

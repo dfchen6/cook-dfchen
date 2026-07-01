@@ -13,7 +13,7 @@ export default function RecipeCard({ recipe, locale }: Props) {
   return (
     <Link
       href={`/${locale}/recipes/${recipe.slug}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:shadow-md dark:border-stone-700 dark:bg-stone-900"
     >
       {recipe.cover_image ? (
         <div className="relative h-44 w-full overflow-hidden">
@@ -25,13 +25,13 @@ export default function RecipeCard({ recipe, locale }: Props) {
           />
         </div>
       ) : (
-        <div className="flex h-44 items-center justify-center bg-stone-100 text-5xl">🍽️</div>
+        <div className="flex h-44 items-center justify-center bg-stone-100 text-5xl dark:bg-stone-800">🍽️</div>
       )}
       <div className="flex flex-col gap-1 p-4">
         <h2 className="text-lg font-semibold leading-tight">{recipe.title_zh}</h2>
         <p className="text-sm text-stone-400">{recipe.title_en}</p>
         {description && (
-          <p className="mt-1 line-clamp-2 text-sm text-stone-600">{description}</p>
+          <p className="mt-1 line-clamp-2 text-sm text-stone-600 dark:text-stone-400">{description}</p>
         )}
         {(recipe.prep_time_mins || recipe.cook_time_mins) && (
           <p className="mt-2 text-xs text-stone-400">
@@ -43,7 +43,7 @@ export default function RecipeCard({ recipe, locale }: Props) {
         {recipe.tags?.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {recipe.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">
+              <span key={tag} className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500 dark:bg-stone-800 dark:text-stone-400">
                 {tag}
               </span>
             ))}

@@ -44,12 +44,12 @@ export default async function RecipeDetailPage({
 
       {/* Bilingual title — always both */}
       <div className="mb-6">
-        <h1 className="text-4xl font-bold leading-tight">{recipe.title_zh}</h1>
-        <p className="mt-1 text-xl text-stone-400">{recipe.title_en}</p>
+        <h1 className="text-3xl font-bold leading-tight sm:text-4xl">{recipe.title_zh}</h1>
+        <p className="mt-1 text-lg text-stone-400 sm:text-xl">{recipe.title_en}</p>
       </div>
 
       {/* Meta row */}
-      <div className="mb-8 flex flex-wrap gap-4 text-sm text-stone-500">
+      <div className="mb-8 flex flex-wrap gap-3 text-sm text-stone-500 dark:text-stone-400">
         {recipe.servings && (
           <span>👤 {recipe.servings} {t('servings')}</span>
         )}
@@ -70,7 +70,7 @@ export default async function RecipeDetailPage({
       {/* Instructions — natural language */}
       <section>
         <h2 className="mb-4 text-xl font-semibold">{t('instructions')}</h2>
-        <div className="prose prose-stone max-w-none whitespace-pre-line leading-8 text-stone-700">
+        <div className="prose prose-stone max-w-none whitespace-pre-line leading-8 text-stone-700 dark:text-stone-300">
           {instructions}
         </div>
       </section>
@@ -79,7 +79,7 @@ export default async function RecipeDetailPage({
       {recipe.tags?.length > 0 && (
         <div className="mt-10 flex flex-wrap gap-2">
           {recipe.tags.map((tag: string) => (
-            <span key={tag} className="rounded-full bg-stone-100 px-3 py-1 text-sm text-stone-500">
+            <span key={tag} className="rounded-full bg-stone-100 px-3 py-1 text-sm text-stone-500 dark:bg-stone-800 dark:text-stone-400">
               {tag}
             </span>
           ))}
@@ -87,7 +87,7 @@ export default async function RecipeDetailPage({
       )}
 
       {/* Add to Meal Plan */}
-      <div className="mt-10 border-t border-stone-100 pt-8">
+      <div className="mt-10 border-t border-stone-100 pt-8 dark:border-stone-800">
         <AddToMealPlan recipeId={recipe.id} loggedIn={!!user} locale={locale} />
       </div>
     </article>
