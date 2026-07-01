@@ -37,7 +37,7 @@ export async function signInWithGoogle() {
     },
   });
 
-  if (error || !data.url) return { error: error?.message ?? 'Failed to initiate Google sign-in' };
+  if (error || !data.url) throw new Error(error?.message ?? 'Failed to initiate Google sign-in');
 
   redirect(data.url);
 }
