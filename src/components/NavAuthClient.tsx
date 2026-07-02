@@ -31,12 +31,11 @@ export default function NavAuthClient({
   return (
     <div className="flex items-center gap-3">
       {isAdmin && (
-        <Link
-          href={`/${locale}/admin`}
-          className="text-xs font-medium text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
-        >
-          Admin
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href={`/${locale}/admin`} className="text-xs font-medium text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100">Admin</Link>
+          <span className="text-stone-200 dark:text-stone-700">|</span>
+          <Link href={`/${locale}/admin/restaurants`} className="text-xs font-medium text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100">Restaurants</Link>
+        </div>
       )}
       <span className="text-xs text-stone-400">{email}</span>
       <button

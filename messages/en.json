@@ -1,6 +1,7 @@
 {
   "nav": {
     "recipes": "Recipes",
+    "restaurants": "Restaurants",
     "mealPlan": "Meal Plan",
     "login": "Login"
   },

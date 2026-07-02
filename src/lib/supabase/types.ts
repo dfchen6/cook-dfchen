@@ -16,6 +16,21 @@ export type Database = {
         Insert: Omit<MealPlan, 'id' | 'created_at'>;
         Update: Partial<Omit<MealPlan, 'id' | 'created_at'>>;
       };
+      restaurants: {
+        Row: Restaurant;
+        Insert: Omit<Restaurant, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Restaurant, 'id' | 'created_at'>>;
+      };
+      restaurant_dishes: {
+        Row: RestaurantDish;
+        Insert: Omit<RestaurantDish, 'id'>;
+        Update: Partial<Omit<RestaurantDish, 'id'>>;
+      };
+      restaurant_photos: {
+        Row: RestaurantPhoto;
+        Insert: Omit<RestaurantPhoto, 'id'>;
+        Update: Partial<Omit<RestaurantPhoto, 'id'>>;
+      };
     };
   };
 };
@@ -87,4 +102,50 @@ export type MealPlan = {
 
 export type RecipeWithIngredients = Recipe & {
   ingredients: Ingredient[];
+};
+
+export type Restaurant = {
+  id: string;
+  name: string;
+  name_zh: string | null;
+  address: string | null;
+  city: string | null;
+  country: string | null;
+  cuisine: string | null;
+  tags: string[];
+  lat: number | null;
+  lng: number | null;
+  google_maps_url: string | null;
+  overall_rating: number | null;
+  price_level: number | null;
+  visited_at: string | null;
+  notes: string | null;
+  cover_image: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RestaurantDish = {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  name_zh: string | null;
+  description: string | null;
+  image_url: string | null;
+  rating: number | null;
+  recommended: boolean;
+  sort_order: number;
+};
+
+export type RestaurantPhoto = {
+  id: string;
+  restaurant_id: string;
+  image_url: string;
+  caption: string | null;
+  sort_order: number;
+};
+
+export type RestaurantWithDetails = Restaurant & {
+  restaurant_dishes: RestaurantDish[];
+  restaurant_photos: RestaurantPhoto[];
 };

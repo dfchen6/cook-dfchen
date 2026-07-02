@@ -17,6 +17,9 @@ export default async function Nav({ locale }: { locale: string }) {
           <Link href={`/${locale}`} className="hidden text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 sm:block">
             {t('recipes')}
           </Link>
+          <Link href={`/${locale}/restaurants`} className="hidden text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 sm:block">
+            {t('restaurants')}
+          </Link>
           <Link href={`/${locale}/meal-plan`} className="text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100">
             {t('mealPlan')}
           </Link>
