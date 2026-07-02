@@ -57,6 +57,10 @@ export async function upsertRestaurant(data: RestaurantInput): Promise<{ error: 
 
   let restaurantId = id;
 
+  // Coerce float ratings/price to integers for SMALLINT columns
+  if (fields.overall_rating != null) fields.overall_rating = Math.round(fields.overall_rating);
+  if (fields.price_level != null) fields.price_level = Math.round(fields.price_level);
+
   if (restaurantId) {
     // Update existing
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,7 +92,7 @@ export async function upsertRestaurant(data: RestaurantInput): Promise<{ error: 
           name_zh: d.name_zh ?? null,
           description: d.description ?? null,
           image_url: d.image_url ?? null,
-          rating: d.rating ?? null,
+          rating: d.rating != null ? Math.round(d.rating) : null,
           recommended: d.recommended ?? true,
           sort_order: d.sort_order ?? i,
         }))
