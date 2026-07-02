@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import BatchImportForm from '@/components/admin/BatchImportForm';
+import DeleteRecipeButton from '@/components/admin/DeleteRecipeButton';
 import type { Recipe } from '@/lib/supabase/types';
-import { deleteRecipe } from './actions';
 
 const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
@@ -27,11 +27,6 @@ export default async function AdminPage({
     .select('id, slug, title_zh, title_en, tags, youtube_url, created_at')
     .order('created_at', { ascending: false })
     .returns<RecipeRow[]>();
-
-  async function handleDelete(id: string) {
-    'use server';
-    await deleteRecipe(id);
-  }
 
   return (
     <div>
@@ -98,15 +93,7 @@ export default async function AdminPage({
                       >
                         Edit
                       </Link>
-                      <form action={handleDelete.bind(null, recipe.id)}>
-                        <button
-                          type="submit"
-                          className="text-xs text-red-400 hover:text-red-600"
-                          onClick={(e) => { if (!confirm(`Delete "${recipe.title_zh}"?`)) e.preventDefault(); }}
-                        >
-                          Delete
-                        </button>
-                      </form>
+                      <DeleteRecipeButton id={recipe.id} title={recipe.title_zh} />
                     </div>
                   </td>
                 </tr>
