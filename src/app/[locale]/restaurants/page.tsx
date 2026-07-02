@@ -1,9 +1,7 @@
-import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/server';
 import RestaurantCard from '@/components/restaurants/RestaurantCard';
+import RestaurantMapWrapper from '@/components/restaurants/RestaurantMapWrapper';
 import type { Restaurant } from '@/lib/supabase/types';
-
-const RestaurantMap = dynamic(() => import('@/components/restaurants/RestaurantMap'), { ssr: false });
 
 type RestaurantRow = Pick<Restaurant, 'id' | 'name' | 'name_zh' | 'city' | 'country' | 'cuisine' | 'tags' | 'overall_rating' | 'price_level' | 'visited_at' | 'cover_image' | 'lat' | 'lng'>;
 
@@ -128,7 +126,7 @@ export default async function RestaurantsPage({
 
       {/* Map view */}
       {isMap && (
-        <RestaurantMap restaurants={restaurants ?? []} locale={locale} />
+        <RestaurantMapWrapper restaurants={restaurants ?? []} locale={locale} />
       )}
 
       {/* List view */}
