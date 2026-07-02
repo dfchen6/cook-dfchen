@@ -8,7 +8,7 @@ export default function DeleteRecipeButton({ id, title }: { id: string; title: s
 
   function handleClick() {
     if (!confirm(`Delete "${title}"?`)) return;
-    startTransition(() => deleteRecipe(id));
+    startTransition(async () => { await deleteRecipe(id); });
   }
 
   return (
