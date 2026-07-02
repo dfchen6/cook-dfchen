@@ -1,4 +1,14 @@
 import { notFound } from 'next/navigation';
+
+function extractYoutubeId(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'youtu.be') return u.pathname.slice(1);
+    return u.searchParams.get('v') ?? url;
+  } catch {
+    return url;
+  }
+}
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import IngredientList from '@/components/IngredientList';
@@ -83,6 +93,22 @@ export default async function RecipeDetailPage({
               {tag}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* YouTube embed */}
+      {recipe.youtube_url && (
+        <div className="mt-10">
+          <h2 className="mb-4 text-xl font-semibold">{t('video')}</h2>
+          <div className="aspect-video w-full overflow-hidden rounded-xl">
+            <iframe
+              src={`https://www.youtube.com/embed/${extractYoutubeId(recipe.youtube_url)}`}
+              title={recipe.title_en}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="h-full w-full"
+            />
+          </div>
         </div>
       )}
 

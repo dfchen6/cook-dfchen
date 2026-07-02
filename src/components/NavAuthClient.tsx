@@ -8,9 +8,11 @@ import { useRouter } from 'next/navigation';
 export default function NavAuthClient({
   locale,
   email,
+  isAdmin,
 }: {
   locale: string;
   email: string | null;
+  isAdmin?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -28,6 +30,14 @@ export default function NavAuthClient({
 
   return (
     <div className="flex items-center gap-3">
+      {isAdmin && (
+        <Link
+          href={`/${locale}/admin`}
+          className="text-xs font-medium text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+        >
+          Admin
+        </Link>
+      )}
       <span className="text-xs text-stone-400">{email}</span>
       <button
         onClick={() =>

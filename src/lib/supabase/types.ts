@@ -32,12 +32,37 @@ export type Recipe = {
   instructions_en: string | null;
   locale_primary: 'zh' | 'en';
   cover_image: string | null;
+  youtube_url: string | null;
   prep_time_mins: number | null;
   cook_time_mins: number | null;
   servings: number | null;
   tags: string[];
   created_at: string;
   updated_at: string;
+};
+
+export type RecipeImportItem = {
+  slug: string;
+  title_zh: string;
+  title_en: string;
+  description_zh?: string | null;
+  description_en?: string | null;
+  instructions_zh?: string | null;
+  instructions_en?: string | null;
+  locale_primary?: 'zh' | 'en';
+  cover_image?: string | null;
+  youtube_url?: string | null;
+  prep_time_mins?: number | null;
+  cook_time_mins?: number | null;
+  servings?: number | null;
+  tags?: string[];
+  ingredients: Array<{
+    name_zh: string;
+    name_en: string;
+    quantity: string;
+    unit: string;
+    sort_order?: number;
+  }>;
 };
 
 export type Ingredient = {
