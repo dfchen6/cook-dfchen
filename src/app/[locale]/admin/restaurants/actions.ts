@@ -120,6 +120,17 @@ export async function upsertRestaurant(data: RestaurantInput): Promise<{ error: 
   return { error: null, id: restaurantId };
 }
 
+export async function batchImportRestaurants(
+  items: RestaurantInput[]
+): Promise<Array<{ name: string; error: string | null }>> {
+  const results: Array<{ name: string; error: string | null }> = [];
+  for (const item of items) {
+    const result = await upsertRestaurant(item);
+    results.push({ name: item.name, error: result.error });
+  }
+  return results;
+}
+
 export async function deleteRestaurant(id: string): Promise<{ error: string | null }> {
   const supabase = await assertAdmin();
   const { error } = await supabase.from('restaurants').delete().eq('id', id);

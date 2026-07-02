@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import DeleteRestaurantButton from '@/components/admin/DeleteRestaurantButton';
+import BatchImportRestaurantsForm from '@/components/admin/BatchImportRestaurantsForm';
 import type { Restaurant } from '@/lib/supabase/types';
 
 const ADMIN_EMAIL = 'dfchen6@gmail.com';
@@ -93,6 +94,15 @@ export default async function AdminRestaurantsPage({ params }: { params: Promise
           </tbody>
         </table>
       </div>
+
+      {/* Batch import */}
+      <section className="mt-12">
+        <h2 className="mb-2 text-base font-semibold">Batch Import</h2>
+        <p className="mb-4 text-sm text-stone-500">
+          Paste a JSON array of restaurants. Existing entries (matched by name) are re-inserted; use the edit form to update specific records.
+        </p>
+        <BatchImportRestaurantsForm />
+      </section>
     </div>
   );
 }
