@@ -17,7 +17,10 @@
   },
   "recipelist": {
     "title": "DC的厨房",
-    "empty": "暂无食谱。"
+    "empty": "暂无食谱。",
+    "searchPlaceholder": "搜索食谱...",
+    "noResults": "未找到食谱。",
+    "allTags": "全部"
   },
   "mealPlan": {
     "title": "饮食计划"

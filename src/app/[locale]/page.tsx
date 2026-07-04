@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
-import RecipeCard from '@/components/RecipeCard';
+import RecipeFilters from '@/components/RecipeFilters';
 import type { Recipe } from '@/lib/supabase/types';
 
 type RecipeCardData = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'description_zh' | 'description_en' | 'cover_image' | 'tags' | 'prep_time_mins' | 'cook_time_mins'>;
@@ -23,15 +23,13 @@ export default async function RecipeListPage({
   return (
     <div>
       <h1 className="mb-6 text-3xl font-bold">{t('title')}</h1>
-      {!recipes?.length ? (
-        <p className="text-stone-500">{t('empty')}</p>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {recipes.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} locale={locale} />
-          ))}
-        </div>
-      )}
+      <RecipeFilters
+        recipes={recipes ?? []}
+        locale={locale}
+        searchPlaceholder={t('searchPlaceholder')}
+        emptyText={t('noResults')}
+        allTagsLabel={t('allTags')}
+      />
     </div>
   );
 }

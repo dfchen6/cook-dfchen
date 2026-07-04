@@ -17,7 +17,10 @@
   },
   "recipelist": {
     "title": "DC's Kitchen",
-    "empty": "No recipes yet."
+    "empty": "No recipes yet.",
+    "searchPlaceholder": "Search recipes...",
+    "noResults": "No recipes found.",
+    "allTags": "All"
   },
   "mealPlan": {
     "title": "Meal Plan"
