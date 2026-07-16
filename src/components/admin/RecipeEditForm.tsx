@@ -40,6 +40,8 @@ export default function RecipeEditForm({ locale, initial }: Props) {
   const [servings, setServings] = useState(String(initial?.servings ?? ''));
   const [tags, setTags] = useState((initial?.tags ?? []).join(', '));
   const [localePrimary, setLocalePrimary] = useState<'zh' | 'en'>(initial?.locale_primary ?? 'zh');
+  const [isPublic, setIsPublic] = useState(initial?.is_public ?? true);
+  const [sharedWith, setSharedWith] = useState((initial?.shared_with ?? []).join(', '));
   const [ingredients, setIngredients] = useState<IngredientRow[]>(
     initial?.ingredients?.length
       ? initial.ingredients.map(({ name_zh, name_en, quantity, unit }) => ({ name_zh, name_en, quantity, unit }))
@@ -78,6 +80,8 @@ export default function RecipeEditForm({ locale, initial }: Props) {
       servings: servings ? Number(servings) : null,
       tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
       locale_primary: localePrimary,
+      is_public: isPublic,
+      shared_with: isPublic ? [] : sharedWith.split(',').map((e) => e.trim()).filter(Boolean),
       ingredients: ingredients.filter((ing) => ing.name_zh || ing.name_en),
     };
 
@@ -161,6 +165,33 @@ export default function RecipeEditForm({ locale, initial }: Props) {
             <input value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} className={inputCls} placeholder="https://youtube.com/watch?v=..." />
           </div>
         </div>
+      </div>
+
+      {/* Visibility */}
+      <div className={sectionCls}>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">Visibility</h3>
+        <div className="flex items-center gap-2">
+          <input
+            id="is-public"
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="h-4 w-4 rounded border-stone-300 dark:border-stone-600"
+          />
+          <label htmlFor="is-public" className="text-sm">Public (visible to everyone)</label>
+        </div>
+        {!isPublic && (
+          <div className="mt-3">
+            <label className={labelCls}>Shared with (comma-separated gmail addresses)</label>
+            <input
+              value={sharedWith}
+              onChange={(e) => setSharedWith(e.target.value)}
+              className={inputCls}
+              placeholder="friend@gmail.com, family@gmail.com"
+            />
+            <p className="mt-1 text-xs text-stone-400">Only you and these people can view this recipe once they sign in.</p>
+          </div>
+        )}
       </div>
 
       {/* Meta */}

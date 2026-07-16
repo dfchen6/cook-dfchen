@@ -7,7 +7,7 @@ import type { Recipe } from '@/lib/supabase/types';
 
 const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
-type RecipeRow = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'tags' | 'youtube_url' | 'created_at'>;
+type RecipeRow = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'tags' | 'youtube_url' | 'is_public' | 'created_at'>;
 
 export default async function AdminPage({
   params,
@@ -24,7 +24,7 @@ export default async function AdminPage({
 
   const { data: recipes } = await supabase
     .from('recipes')
-    .select('id, slug, title_zh, title_en, tags, youtube_url, created_at')
+    .select('id, slug, title_zh, title_en, tags, youtube_url, is_public, created_at')
     .order('created_at', { ascending: false })
     .returns<RecipeRow[]>();
 
@@ -55,6 +55,7 @@ export default async function AdminPage({
                 <th className="px-4 py-3 text-left font-medium text-stone-500 hidden sm:table-cell">Slug</th>
                 <th className="px-4 py-3 text-left font-medium text-stone-500 hidden md:table-cell">Tags</th>
                 <th className="px-4 py-3 text-center font-medium text-stone-500">YT</th>
+                <th className="px-4 py-3 text-center font-medium text-stone-500">Visibility</th>
                 <th className="px-4 py-3 text-right font-medium text-stone-500">Actions</th>
               </tr>
             </thead>
@@ -76,6 +77,13 @@ export default async function AdminPage({
                       <span className="text-red-500" title={recipe.youtube_url}>▶</span>
                     ) : (
                       <span className="text-stone-300 dark:text-stone-600">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {recipe.is_public ? (
+                      <span className="text-xs text-stone-400">Public</span>
+                    ) : (
+                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400" title="Shared only">🔒 Shared</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -100,7 +108,7 @@ export default async function AdminPage({
               ))}
               {!recipes?.length && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-stone-400">No recipes yet.</td>
+                  <td colSpan={7} className="px-4 py-8 text-center text-stone-400">No recipes yet.</td>
                 </tr>
               )}
             </tbody>

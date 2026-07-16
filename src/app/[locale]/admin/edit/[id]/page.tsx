@@ -24,7 +24,7 @@ export default async function RecipeEditPage({
   if (id !== 'new') {
     const { data } = await supabase
       .from('recipes')
-      .select('*, ingredients(*)')
+      .select('*, ingredients(*), recipe_shares(email)')
       .eq('id', id)
       .order('sort_order', { referencedTable: 'ingredients', ascending: true })
       .returns<RecipeWithIngredients[]>()
@@ -68,6 +68,8 @@ export default async function RecipeEditPage({
                 servings: initial.servings,
                 tags: initial.tags,
                 locale_primary: initial.locale_primary,
+                is_public: initial.is_public,
+                shared_with: (initial.recipe_shares ?? []).map((s) => s.email),
                 ingredients: initial.ingredients,
               }
             : null

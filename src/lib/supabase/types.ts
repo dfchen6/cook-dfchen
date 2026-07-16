@@ -31,6 +31,11 @@ export type Database = {
         Insert: Omit<RestaurantPhoto, 'id'>;
         Update: Partial<Omit<RestaurantPhoto, 'id'>>;
       };
+      recipe_shares: {
+        Row: RecipeShare;
+        Insert: Omit<RecipeShare, 'id' | 'created_at'>;
+        Update: Partial<Omit<RecipeShare, 'id' | 'created_at'>>;
+      };
     };
   };
 };
@@ -52,8 +57,16 @@ export type Recipe = {
   cook_time_mins: number | null;
   servings: number | null;
   tags: string[];
+  is_public: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type RecipeShare = {
+  id: string;
+  recipe_id: string;
+  email: string;
+  created_at: string;
 };
 
 export type RecipeImportItem = {
@@ -71,6 +84,8 @@ export type RecipeImportItem = {
   cook_time_mins?: number | null;
   servings?: number | null;
   tags?: string[];
+  is_public?: boolean;
+  shared_with?: string[];
   ingredients: Array<{
     name_zh: string;
     name_en: string;
@@ -102,6 +117,7 @@ export type MealPlan = {
 
 export type RecipeWithIngredients = Recipe & {
   ingredients: Ingredient[];
+  recipe_shares?: Pick<RecipeShare, 'email'>[];
 };
 
 export type Restaurant = {

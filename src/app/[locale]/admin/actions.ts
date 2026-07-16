@@ -36,6 +36,7 @@ export async function upsertRecipe(data: RecipeImportItem): Promise<{ error: str
     cook_time_mins: fields.cook_time_mins ?? null,
     servings: fields.servings ?? null,
     tags: fields.tags ?? [],
+    is_public: fields.is_public ?? true,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,6 +64,19 @@ export async function upsertRecipe(data: RecipeImportItem): Promise<{ error: str
       }))
     );
     if (ingError) return { error: ingError.message };
+  }
+
+  // Replace shares
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('recipe_shares') as any).delete().eq('recipe_id', recipe.id);
+
+  const sharedWith = [...new Set((fields.shared_with ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  if (sharedWith.length) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: shareError } = await (supabase.from('recipe_shares') as any).insert(
+      sharedWith.map((email) => ({ recipe_id: recipe.id, email }))
+    );
+    if (shareError) return { error: shareError.message };
   }
 
   revalidatePath('/');
