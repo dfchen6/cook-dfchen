@@ -75,6 +75,7 @@ export type RecipeImportItem = {
   title_en: string;
   description_zh?: string | null;
   description_en?: string | null;
+  instructions?: string | null;
   instructions_zh?: string | null;
   instructions_en?: string | null;
   locale_primary?: 'zh' | 'en';

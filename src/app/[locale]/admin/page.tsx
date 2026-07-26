@@ -3,11 +3,9 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ADMIN_EMAIL } from '@/lib/admin';
 import BatchImportForm from '@/components/admin/BatchImportForm';
-import DeleteRecipeButton from '@/components/admin/DeleteRecipeButton';
 import ImportPrivateRecipesButton from '@/components/admin/ImportPrivateRecipesButton';
-import type { Recipe } from '@/lib/supabase/types';
-
-type RecipeRow = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'tags' | 'youtube_url' | 'is_public' | 'created_at'>;
+import RecipeAdminTable from '@/components/admin/RecipeAdminTable';
+import RecipeCsvTools from '@/components/admin/RecipeCsvTools';
 
 export default async function AdminPage({
   params,
@@ -26,7 +24,16 @@ export default async function AdminPage({
     .from('recipes')
     .select('id, slug, title_zh, title_en, tags, youtube_url, is_public, created_at')
     .order('created_at', { ascending: false })
-    .returns<RecipeRow[]>();
+    .returns<Array<{
+      id: string;
+      slug: string;
+      title_zh: string;
+      title_en: string;
+      tags: string[];
+      youtube_url: string | null;
+      is_public: boolean;
+      created_at: string;
+    }>>();
 
   return (
     <div>
@@ -46,78 +53,15 @@ export default async function AdminPage({
       {/* Recipe table */}
       <section className="mb-12">
         <h2 className="mb-4 text-base font-semibold">All Recipes</h2>
-        <div className="overflow-x-auto rounded-xl border border-stone-200 dark:border-stone-700">
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 dark:bg-stone-800">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-stone-500">ZH Title</th>
-                <th className="px-4 py-3 text-left font-medium text-stone-500">EN Title</th>
-                <th className="px-4 py-3 text-left font-medium text-stone-500 hidden sm:table-cell">Slug</th>
-                <th className="px-4 py-3 text-left font-medium text-stone-500 hidden md:table-cell">Tags</th>
-                <th className="px-4 py-3 text-center font-medium text-stone-500">YT</th>
-                <th className="px-4 py-3 text-center font-medium text-stone-500">Visibility</th>
-                <th className="px-4 py-3 text-right font-medium text-stone-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-              {recipes?.map((recipe) => (
-                <tr key={recipe.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/50">
-                  <td className="px-4 py-3 font-medium">{recipe.title_zh}</td>
-                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{recipe.title_en}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-stone-500 hidden sm:table-cell">{recipe.slug}</td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {recipe.tags?.map((tag) => (
-                        <span key={tag} className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500 dark:bg-stone-800">{tag}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {recipe.youtube_url ? (
-                      <span className="text-red-500" title={recipe.youtube_url}>▶</span>
-                    ) : (
-                      <span className="text-stone-300 dark:text-stone-600">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {recipe.is_public ? (
-                      <span className="text-xs text-stone-400">Public</span>
-                    ) : (
-                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400" title="Shared only">🔒 Shared</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-3">
-                      <Link
-                        href={`/${locale}/recipes/${recipe.slug}`}
-                        className="text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
-                        target="_blank"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        href={`/${locale}/admin/edit/${recipe.id}`}
-                        className="text-xs font-medium text-stone-700 hover:text-stone-900 dark:text-stone-300 dark:hover:text-stone-100"
-                      >
-                        Edit
-                      </Link>
-                      <DeleteRecipeButton id={recipe.id} title={recipe.title_zh} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!recipes?.length && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-stone-400">No recipes yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <RecipeAdminTable recipes={recipes ?? []} locale={locale} />
       </section>
 
       <section className="mb-12">
         <ImportPrivateRecipesButton />
+      </section>
+
+      <section className="mb-12">
+        <RecipeCsvTools />
       </section>
 
       {/* Batch import */}

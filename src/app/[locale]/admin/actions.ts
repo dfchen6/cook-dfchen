@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ADMIN_EMAIL } from '@/lib/admin';
 import { revalidatePath } from 'next/cache';
 import { PRIVATE_RECIPES } from '@/lib/private-recipes';
-import type { RecipeImportItem } from '@/lib/supabase/types';
+import type { RecipeImportItem, RecipeWithIngredients } from '@/lib/supabase/types';
 
 async function assertAdmin() {
   const supabase = await createClient();
@@ -27,7 +27,7 @@ async function upsertRecipeWithClient(
     title_en: fields.title_en,
     description_zh: fields.description_zh ?? null,
     description_en: fields.description_en ?? null,
-    instructions: fields.instructions_zh ?? fields.instructions_en ?? '',
+    instructions: fields.instructions ?? fields.instructions_zh ?? fields.instructions_en ?? '',
     instructions_zh: fields.instructions_zh ?? null,
     instructions_en: fields.instructions_en ?? null,
     locale_primary: fields.locale_primary ?? 'zh',
@@ -83,8 +83,41 @@ async function upsertRecipeWithClient(
   return { error: null, slug: recipe.slug };
 }
 
+function validateRecipeImport(item: RecipeImportItem): string | null {
+  if (
+    typeof item.slug !== 'string' ||
+    typeof item.title_zh !== 'string' ||
+    typeof item.title_en !== 'string' ||
+    !item.slug.trim() ||
+    !item.title_zh.trim() ||
+    !item.title_en.trim()
+  ) {
+    return 'Slug and both titles are required.';
+  }
+  if (item.locale_primary && item.locale_primary !== 'zh' && item.locale_primary !== 'en') {
+    return 'locale_primary must be "zh" or "en".';
+  }
+  if (!Array.isArray(item.ingredients)) {
+    return 'ingredients must be an array.';
+  }
+  if (item.ingredients.some((ingredient) =>
+    typeof ingredient.name_zh !== 'string' ||
+    typeof ingredient.name_en !== 'string' ||
+    typeof ingredient.quantity !== 'string' ||
+    typeof ingredient.unit !== 'string' ||
+    !ingredient.name_zh.trim() ||
+    !ingredient.name_en.trim() ||
+    !ingredient.quantity.trim()
+  )) {
+    return 'Each ingredient requires Chinese name, English name, and quantity.';
+  }
+  return null;
+}
+
 export async function upsertRecipe(data: RecipeImportItem): Promise<{ error: string | null; slug?: string }> {
   const supabase = await assertAdmin();
+  const validationError = validateRecipeImport(data);
+  if (validationError) return { error: validationError };
   const result = await upsertRecipeWithClient(supabase, data);
 
   if (!result.error && result.slug) {
@@ -101,6 +134,11 @@ export async function batchImportRecipes(
   const supabase = await assertAdmin();
   const results: Array<{ slug: string; error: string | null }> = [];
   for (const item of items) {
+    const validationError = validateRecipeImport(item);
+    if (validationError) {
+      results.push({ slug: item.slug || '(missing slug)', error: validationError });
+      continue;
+    }
     const result = await upsertRecipeWithClient(supabase, item);
     results.push({ slug: item.slug, error: result.error });
   }
@@ -122,4 +160,35 @@ export async function deleteRecipe(id: string): Promise<{ error: string | null }
   if (error) return { error: error.message };
   revalidatePath('/');
   return { error: null };
+}
+
+export async function getRecipesForCsvExport(): Promise<RecipeWithIngredients[]> {
+  const supabase = await assertAdmin();
+  const { data, error } = await supabase
+    .from('recipes')
+    .select('*, ingredients(*), recipe_shares(email)')
+    .order('created_at', { ascending: false })
+    .order('sort_order', { referencedTable: 'ingredients', ascending: true })
+    .returns<RecipeWithIngredients[]>();
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function bulkDeleteRecipes(
+  ids: string[]
+): Promise<{ deleted: number; error: string | null }> {
+  const supabase = await assertAdmin();
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  if (!uniqueIds.length) return { deleted: 0, error: 'No recipes selected.' };
+
+  const { data, error } = await supabase
+    .from('recipes')
+    .delete()
+    .in('id', uniqueIds)
+    .select('id');
+  if (error) return { deleted: 0, error: error.message };
+
+  revalidatePath('/');
+  return { deleted: data?.length ?? 0, error: null };
 }
