@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { importPrivateRecipes } from '@/app/[locale]/admin/actions';
+import SyncPrivateRecipeCoversButton from '@/components/admin/SyncPrivateRecipeCoversButton';
 
 export default function ImportPrivateRecipesButton() {
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function ImportPrivateRecipesButton() {
         </p>
       )}
       {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      <SyncPrivateRecipeCoversButton />
     </div>
   );
 }

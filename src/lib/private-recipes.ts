@@ -14,6 +14,61 @@ type RecipeInput = {
   cook?: number;
 };
 
+const CATEGORY_TAG: Record<RecipeInput['category'], string> = {
+  日常菜: '日常',
+  汤: '汤品',
+  premium菜: '进阶',
+  'hidden menu': '隐藏菜单',
+};
+
+function primaryIngredient(ingredients: Ingredient[]): string {
+  const names = ingredients.map(([name]) => name).join(' ');
+  if (/牛|牛仔骨|牛腱|牛舌/.test(names)) return '牛肉';
+  if (/羊/.test(names)) return '羊肉';
+  if (/鸡/.test(names)) return '鸡肉';
+  if (/猪|排骨|五花|腊肉|猪耳/.test(names)) return '猪肉';
+  if (/龙虾|小龙虾|虾|珊瑚虾/.test(names)) return '虾类';
+  if (/鱼|鲈|鲳/.test(names)) return '鱼类';
+  if (/鱿鱼|墨鱼|花甲|田螺|蛏|螃蟹/.test(names)) return '海鲜';
+  if (/豆腐|腐竹|豆皮/.test(names)) return '豆制品';
+  if (/米饭|大米|米粉|粉丝/.test(names)) return '主食';
+  return '蔬菜';
+}
+
+function cookingMethod(title: string, category: RecipeInput['category']): string {
+  if (/凉拌/.test(title)) return '凉拌';
+  if (/烤|空气炸/.test(title)) return '烤制';
+  if (/蒸|白灼/.test(title)) return '蒸煮';
+  if (category === '汤' || /炖|煲|汤/.test(title)) return '炖煮';
+  if (/饭|粉/.test(title)) return '主食';
+  return '快炒';
+}
+
+function flavor(title: string): string | null {
+  if (/麻辣|辣子|水煮|香锅|田螺/.test(title)) return '麻辣';
+  if (/孜然/.test(title)) return '孜然';
+  if (/黑椒/.test(title)) return '黑椒';
+  if (/糖醋/.test(title)) return '糖醋';
+  if (/咖喱/.test(title)) return '咖喱';
+  if (/Cajun/.test(title)) return 'Cajun';
+  if (/韩式|豆腐锅/.test(title)) return '韩式';
+  if (/poke/.test(title)) return '夏威夷';
+  if (/酱|卤/.test(title)) return '酱香';
+  if (/蒜/.test(title)) return '蒜香';
+  return null;
+}
+
+export function privateRecipeCoverSource(slug: string, title: string): string {
+  const seed = [...slug].reduce((total, character) => (total * 31 + character.charCodeAt(0)) >>> 0, 7);
+  const prompt = `premium editorial food photography of ${title}, authentic plated dish, warm natural light, overhead 45 degree angle, clean dark stone background, no people, no text, no logo, no watermark`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=640&height=640&seed=${seed}&nologo=true`;
+}
+
+function coverImage(slug: string): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return url ? `${url}/storage/v1/object/public/restaurant-images/recipes/${slug}/cover.jpg` : null;
+}
+
 const recipe = ({
   slug,
   title_zh,
@@ -36,9 +91,16 @@ const recipe = ({
   prep_time_mins: prep,
   cook_time_mins: cook,
   servings: 2,
-  tags: ['私房', 'private', category],
+  tags: [
+    CATEGORY_TAG[category],
+    primaryIngredient(ingredients),
+    flavor(title_zh),
+    cookingMethod(title_zh, category),
+    '私房',
+  ].filter((tag): tag is string => Boolean(tag)),
   is_public: false,
   shared_with: [],
+  cover_image: coverImage(slug),
   ingredients: ingredients.map(([name_zh, name_en, quantity, unit]) => ({
     name_zh,
     name_en,

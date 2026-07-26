@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ADMIN_EMAIL } from '@/lib/admin';
 import { revalidatePath } from 'next/cache';
-import { PRIVATE_RECIPES } from '@/lib/private-recipes';
+import { PRIVATE_RECIPES, privateRecipeCoverSource } from '@/lib/private-recipes';
 import type { RecipeImportItem, RecipeWithIngredients } from '@/lib/supabase/types';
 
 async function assertAdmin() {
@@ -152,6 +152,41 @@ export async function importPrivateRecipes(): Promise<{ imported: number; failed
     imported: results.filter((result) => !result.error).length,
     failed: results.filter((result) => result.error).length,
   };
+}
+
+export async function syncPrivateRecipeCoverBatch(
+  slugs: string[]
+): Promise<{ synced: number; failed: string[] }> {
+  const supabase = await assertAdmin();
+  const selected = PRIVATE_RECIPES.filter((recipe) => slugs.includes(recipe.slug)).slice(0, 10);
+  const failed: string[] = [];
+  let synced = 0;
+
+  for (const recipe of selected) {
+    try {
+      const response = await fetch(privateRecipeCoverSource(recipe.slug, recipe.title_en));
+      if (!response.ok) throw new Error(`Image download failed (${response.status}).`);
+      const { error: uploadError } = await supabase.storage
+        .from('restaurant-images')
+        .upload(`recipes/${recipe.slug}/cover.jpg`, await response.arrayBuffer(), {
+          contentType: response.headers.get('content-type') ?? 'image/jpeg',
+          upsert: true,
+        });
+      if (uploadError) throw uploadError;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase.from('recipes') as any)
+        .update({ cover_image: recipe.cover_image })
+        .eq('slug', recipe.slug);
+      if (updateError) throw updateError;
+      synced += 1;
+    } catch {
+      failed.push(recipe.slug);
+    }
+  }
+
+  revalidatePath('/');
+  return { synced, failed };
 }
 
 export async function deleteRecipe(id: string): Promise<{ error: string | null }> {

@@ -42,7 +42,7 @@ export default function RecipeCard({ recipe, locale }: Props) {
         )}
         {recipe.tags?.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {recipe.tags.map((tag) => (
+            {recipe.tags.slice(0, 4).map((tag) => (
               <span key={tag} className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500 dark:bg-stone-800 dark:text-stone-400">
                 {tag}
               </span>
