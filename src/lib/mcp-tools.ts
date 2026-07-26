@@ -28,13 +28,13 @@ export function registerTools(server: McpServer) {
       const supabase = getSupabase();
       const { data, error } = await supabase
         .from('recipes')
-        .select('slug, title_zh, title_en, tags, prep_time_mins, cook_time_mins')
+        .select('slug, title_zh, title_en, tags, prep_time_mins, cook_time_mins, is_public')
         .order('created_at', { ascending: false });
 
       if (error) return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }] };
 
       const text = data.map(r =>
-        `• ${r.title_zh} (${r.title_en}) — slug: ${r.slug}${r.tags?.length ? ` [${r.tags.join(', ')}]` : ''}`
+        `• ${r.title_zh} (${r.title_en}) — slug: ${r.slug}${r.is_public ? '' : ' 🔒 private'}${r.tags?.length ? ` [${r.tags.join(', ')}]` : ''}`
       ).join('\n');
 
       return { content: [{ type: 'text' as const, text: text || 'No recipes yet.' }] };
@@ -51,7 +51,7 @@ export function registerTools(server: McpServer) {
       const supabase = getSupabase();
       const { data, error } = await supabase
         .from('recipes')
-        .select('*, ingredients(*)')
+        .select('*, ingredients(*), recipe_shares(email)')
         .eq('slug', slug)
         .order('sort_order', { referencedTable: 'ingredients', ascending: true })
         .single();
@@ -62,9 +62,13 @@ export function registerTools(server: McpServer) {
         .map(i => `  - ${i.name_zh} (${i.name_en}): ${i.quantity} ${i.unit}`)
         .join('\n');
 
+      const shares = (data.recipe_shares as Array<{ email: string }>).map(s => s.email);
+      const visibility = data.is_public ? 'public' : `private${shares.length ? `, shared with: ${shares.join(', ')}` : ''}`;
+
       const text = `${data.title_zh} · ${data.title_en}
 Slug: ${data.slug} | Servings: ${data.servings ?? '—'} | Prep: ${data.prep_time_mins ?? '—'}min | Cook: ${data.cook_time_mins ?? '—'}min
 Tags: ${data.tags?.join(', ') || 'none'}
+Visibility: ${visibility}
 
 Ingredients:
 ${ings}
@@ -91,13 +95,17 @@ ${data.instructions}`.trim();
       description_zh: z.string().optional(),
       description_en: z.string().optional(),
       locale_primary: z.enum(['zh', 'en']).default('zh'),
+      cover_image: z.string().optional().describe('Cover image URL'),
+      youtube_url: z.string().optional().describe('YouTube video URL'),
       prep_time_mins: z.number().optional(),
       cook_time_mins: z.number().optional(),
       servings: z.number().optional(),
       tags: z.array(z.string()).default([]),
+      is_public: z.boolean().default(true).describe('false = only visible to the owner and shared_with emails'),
+      shared_with: z.array(z.string()).default([]).describe('Emails allowed to view when is_public is false'),
       ingredients: z.array(IngredientSchema),
     },
-    async ({ ingredients, ...fields }) => {
+    async ({ ingredients, shared_with, ...fields }) => {
       const supabase = getSupabase();
       const { data: recipe, error } = await supabase
         .from('recipes')
@@ -110,6 +118,12 @@ ${data.instructions}`.trim();
       if (ingredients.length > 0) {
         await supabase.from('ingredients').insert(
           ingredients.map((ing, i) => ({ recipe_id: recipe.id, ...ing, sort_order: i }))
+        );
+      }
+
+      if (shared_with.length > 0) {
+        await supabase.from('recipe_shares').insert(
+          shared_with.map(email => ({ recipe_id: recipe.id, email: email.trim().toLowerCase() }))
         );
       }
 
@@ -136,18 +150,39 @@ ${data.instructions}`.trim();
       instructions_en: z.string().optional(),
       description_zh: z.string().optional(),
       description_en: z.string().optional(),
+      cover_image: z.string().optional().describe('Cover image URL'),
+      youtube_url: z.string().optional().describe('YouTube video URL'),
       prep_time_mins: z.number().optional(),
       cook_time_mins: z.number().optional(),
       servings: z.number().optional(),
       tags: z.array(z.string()).optional(),
+      is_public: z.boolean().optional().describe('false = only visible to the owner and shared emails'),
+      shared_with: z.array(z.string()).optional().describe('Replaces the full list of emails allowed to view when private'),
     },
-    async ({ slug, ...fields }) => {
+    async ({ slug, shared_with, ...fields }) => {
       const updates = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
-      if (!Object.keys(updates).length) return { content: [{ type: 'text' as const, text: 'No fields to update.' }] };
+      if (!Object.keys(updates).length && shared_with === undefined) {
+        return { content: [{ type: 'text' as const, text: 'No fields to update.' }] };
+      }
 
       const supabase = getSupabase();
-      const { error } = await supabase.from('recipes').update(updates).eq('slug', slug);
-      if (error) return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }] };
+      const { data: recipe, error } = await supabase
+        .from('recipes')
+        .update(Object.keys(updates).length ? updates : { updated_at: new Date().toISOString() })
+        .eq('slug', slug)
+        .select('id')
+        .single();
+      if (error || !recipe) return { content: [{ type: 'text' as const, text: `Error: ${error?.message ?? `Recipe "${slug}" not found.`}` }] };
+
+      if (shared_with !== undefined) {
+        await supabase.from('recipe_shares').delete().eq('recipe_id', recipe.id);
+        if (shared_with.length > 0) {
+          await supabase.from('recipe_shares').insert(
+            shared_with.map(email => ({ recipe_id: recipe.id, email: email.trim().toLowerCase() }))
+          );
+        }
+      }
+
       return { content: [{ type: 'text' as const, text: `✓ Updated "${slug}".` }] };
     }
   );

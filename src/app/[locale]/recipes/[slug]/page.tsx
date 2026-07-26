@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 function extractYoutubeId(url: string): string {
   try {
@@ -36,12 +36,24 @@ export default async function RecipeDetailPage({
     supabase.auth.getUser(),
   ]);
 
-  if (!recipe) notFound();
+  if (!recipe) {
+    // RLS hides private recipes from anonymous visitors — a shared link should
+    // lead to login (and back here) rather than a dead-end 404.
+    if (!user) {
+      redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/recipes/${slug}`)}`);
+    }
+    notFound();
+  }
 
   const instructions =
     locale === 'zh'
       ? (recipe.instructions_zh ?? recipe.instructions)
       : (recipe.instructions_en ?? recipe.instructions);
+
+  const description =
+    locale === 'zh'
+      ? (recipe.description_zh ?? recipe.description_en)
+      : (recipe.description_en ?? recipe.description_zh);
 
   return (
     <article className="mx-auto max-w-2xl">
@@ -56,6 +68,9 @@ export default async function RecipeDetailPage({
       <div className="mb-6">
         <h1 className="text-3xl font-bold leading-tight sm:text-4xl">{recipe.title_zh}</h1>
         <p className="mt-1 text-lg text-stone-400 sm:text-xl">{recipe.title_en}</p>
+        {description && (
+          <p className="mt-4 leading-7 text-stone-600 dark:text-stone-400">{description}</p>
+        )}
       </div>
 
       {/* Meta row */}

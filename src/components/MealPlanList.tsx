@@ -60,11 +60,11 @@ function RemoveButton({ id }: { id: string }) {
 export default function MealPlanList({ plans, locale }: { plans: Plan[]; locale: string }) {
   if (!plans.length) {
     return (
-      <div className="rounded-xl border border-stone-200 bg-white p-8 text-center text-stone-500">
+      <div className="rounded-xl border border-stone-200 bg-white p-8 text-center text-stone-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400">
         <p className="text-4xl">📅</p>
         <p className="mt-3 font-medium">No meals planned yet.</p>
-        <p className="mt-1 text-sm">Go to a recipe and click "Add to Meal Plan".</p>
-        <Link href={`/${locale}`} className="mt-4 inline-block text-sm font-medium text-stone-900 underline">
+        <p className="mt-1 text-sm">Go to a recipe and click &quot;Add to Meal Plan&quot;.</p>
+        <Link href={`/${locale}`} className="mt-4 inline-block text-sm font-medium text-stone-900 underline dark:text-stone-100">
           Browse recipes →
         </Link>
       </div>
@@ -84,7 +84,7 @@ export default function MealPlanList({ plans, locale }: { plans: Plan[]; locale:
             {dayPlans.map((plan) => (
               <div
                 key={plan.id}
-                className="flex items-center gap-4 rounded-xl border border-stone-200 bg-white px-4 py-3"
+                className="flex items-center gap-4 rounded-xl border border-stone-200 bg-white px-4 py-3 dark:border-stone-700 dark:bg-stone-900"
               >
                 <span className="text-xl">{MEAL_EMOJI[plan.meal_type] ?? '🍽️'}</span>
                 <div className="flex flex-1 flex-col">

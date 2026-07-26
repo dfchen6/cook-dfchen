@@ -13,7 +13,7 @@ export type Database = {
       };
       meal_plans: {
         Row: MealPlan;
-        Insert: Omit<MealPlan, 'id' | 'created_at'>;
+        Insert: Omit<MealPlan, 'id' | 'created_at' | 'google_event_id'>;
         Update: Partial<Omit<MealPlan, 'id' | 'created_at'>>;
       };
       restaurants: {
@@ -112,6 +112,7 @@ export type MealPlan = {
   planned_date: string;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   notes: string | null;
+  google_event_id: string | null;
   created_at: string;
 };
 

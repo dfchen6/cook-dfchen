@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { upsertRecipe } from '@/app/[locale]/admin/actions';
+import ImageUploadInput from '@/components/admin/ImageUploadInput';
 import type { RecipeImportItem } from '@/lib/supabase/types';
 
 type IngredientRow = {
@@ -156,10 +157,13 @@ export default function RecipeEditForm({ locale, initial }: Props) {
       <div className={sectionCls}>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400">Media</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={labelCls}>Cover Image URL</label>
-            <input value={coverImage} onChange={(e) => setCoverImage(e.target.value)} className={inputCls} placeholder="https://..." />
-          </div>
+          <ImageUploadInput
+            label="Cover Image"
+            value={coverImage}
+            onChange={setCoverImage}
+            bucket="restaurant-images"
+            path={`recipes/${initial?.slug ?? crypto.randomUUID()}/cover`}
+          />
           <div>
             <label className={labelCls}>YouTube URL</label>
             <input value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} className={inputCls} placeholder="https://youtube.com/watch?v=..." />

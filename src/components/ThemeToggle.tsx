@@ -1,12 +1,14 @@
 'use client';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const emptySubscribe = () => () => {};
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  // Theme is unknown until hydration — render a placeholder on the server pass
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
-  useEffect(() => setMounted(true), []);
   if (!mounted) return <div className="h-8 w-8" />;
 
   const isDark = theme === 'dark';

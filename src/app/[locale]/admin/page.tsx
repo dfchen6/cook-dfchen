@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/admin';
 import BatchImportForm from '@/components/admin/BatchImportForm';
 import DeleteRecipeButton from '@/components/admin/DeleteRecipeButton';
+import ImportPrivateRecipesButton from '@/components/admin/ImportPrivateRecipesButton';
 import type { Recipe } from '@/lib/supabase/types';
-
-const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
 type RecipeRow = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'tags' | 'youtube_url' | 'is_public' | 'created_at'>;
 
@@ -114,6 +114,10 @@ export default async function AdminPage({
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="mb-12">
+        <ImportPrivateRecipesButton />
       </section>
 
       {/* Batch import */}

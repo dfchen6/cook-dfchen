@@ -245,7 +245,7 @@ export default function RestaurantEditForm({ locale, initial }: Props) {
                       onChange={(e) => updateDish(i, { recommended: e.target.checked })}
                       className="h-4 w-4 rounded"
                     />
-                    Mark as "Must Try"
+                    Mark as &quot;Must Try&quot;
                   </label>
                 </div>
                 <div className="sm:col-span-2">

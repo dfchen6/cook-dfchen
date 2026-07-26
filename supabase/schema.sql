@@ -1,3 +1,8 @@
+-- Canonical schema for cook-dfchen — reflects the current production database.
+-- For a fresh Supabase project, run this file alone.
+-- (google_tokens.sql and recipe_sharing.sql are historical migrations already
+-- folded into this file.)
+
 -- Recipes
 create table recipes (
   id            uuid primary key default gen_random_uuid(),
@@ -11,10 +16,12 @@ create table recipes (
   instructions_en text,                -- AI-generated clean English version
   locale_primary text not null default 'zh' check (locale_primary in ('zh', 'en')),
   cover_image   text,
+  youtube_url   text,
   prep_time_mins integer,
   cook_time_mins integer,
   servings      integer,
   tags          text[] default '{}',
+  is_public     boolean not null default true,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
@@ -30,6 +37,15 @@ create table ingredients (
   sort_order  integer not null default 0
 );
 
+-- Per-recipe allowlist of accounts that can view a private recipe
+create table recipe_shares (
+  id          uuid primary key default gen_random_uuid(),
+  recipe_id   uuid not null references recipes(id) on delete cascade,
+  email       text not null,
+  created_at  timestamptz not null default now(),
+  unique (recipe_id, email)
+);
+
 -- Meal plans (auth required)
 create table meal_plans (
   id           uuid primary key default gen_random_uuid(),
@@ -38,7 +54,59 @@ create table meal_plans (
   planned_date date not null,
   meal_type    text not null check (meal_type in ('breakfast', 'lunch', 'dinner', 'snack')),
   notes        text,
+  google_event_id text,                -- set once synced to Google Calendar
   created_at   timestamptz not null default now()
+);
+
+-- Google OAuth tokens per user (for calendar sync)
+create table google_tokens (
+  user_id      uuid primary key references auth.users(id) on delete cascade,
+  access_token text not null,
+  refresh_token text,
+  expiry_date  bigint,
+  updated_at   timestamptz not null default now()
+);
+
+-- Restaurants (food journal)
+create table restaurants (
+  id              uuid primary key default gen_random_uuid(),
+  name            text not null,
+  name_zh         text,
+  address         text,
+  city            text,
+  country         text,
+  cuisine         text,
+  tags            text[] default '{}',
+  lat             double precision,
+  lng             double precision,
+  google_maps_url text,
+  overall_rating  integer,
+  price_level     integer,
+  visited_at      date,
+  notes           text,
+  cover_image     text,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+create table restaurant_dishes (
+  id            uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references restaurants(id) on delete cascade,
+  name          text not null,
+  name_zh       text,
+  description   text,
+  image_url     text,
+  rating        integer,
+  recommended   boolean not null default true,
+  sort_order    integer not null default 0
+);
+
+create table restaurant_photos (
+  id            uuid primary key default gen_random_uuid(),
+  restaurant_id uuid not null references restaurants(id) on delete cascade,
+  image_url     text not null,
+  caption       text,
+  sort_order    integer not null default 0
 );
 
 -- Auto-update updated_at
@@ -54,28 +122,98 @@ create trigger recipes_updated_at
   before update on recipes
   for each row execute function update_updated_at();
 
+create trigger restaurants_updated_at
+  before update on restaurants
+  for each row execute function update_updated_at();
+
 -- Row Level Security
 alter table recipes enable row level security;
 alter table ingredients enable row level security;
+alter table recipe_shares enable row level security;
 alter table meal_plans enable row level security;
+alter table google_tokens enable row level security;
+alter table restaurants enable row level security;
+alter table restaurant_dishes enable row level security;
+alter table restaurant_photos enable row level security;
 
--- Recipes: public read, authenticated write
-create policy "public can read recipes" on recipes
-  for select using (true);
+-- Helper: is this recipe visible to the current requester?
+-- security definer so it can consult recipe_shares (RLS-restricted to admin) on the caller's behalf.
+create or replace function recipe_is_visible(target_recipe_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from recipes
+    where recipes.id = target_recipe_id
+    and (
+      recipes.is_public
+      or auth.jwt() ->> 'email' = 'dfchen6@gmail.com'
+      or exists (
+        select 1 from recipe_shares
+        where recipe_shares.recipe_id = recipes.id
+        and recipe_shares.email = auth.jwt() ->> 'email'
+      )
+    )
+  );
+$$;
 
-create policy "authenticated can write recipes" on recipes
-  for all using (auth.role() = 'authenticated');
+-- Recipes: read only if public, shared with you, or you're the admin; admin-only writes
+create policy "read visible recipes" on recipes
+  for select using (recipe_is_visible(id));
 
--- Ingredients: public read, authenticated write
-create policy "public can read ingredients" on ingredients
-  for select using (true);
+create policy "admin can write recipes" on recipes
+  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
 
-create policy "authenticated can write ingredients" on ingredients
-  for all using (auth.role() = 'authenticated');
+-- Ingredients inherit their recipe's visibility
+create policy "read ingredients of visible recipes" on ingredients
+  for select using (recipe_is_visible(recipe_id));
+
+create policy "admin can write ingredients" on ingredients
+  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
+
+-- Shares: only the admin manages who a recipe is shared with
+create policy "admin can manage recipe shares" on recipe_shares
+  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
 
 -- Meal plans: private to owner
 create policy "users can manage own meal plans" on meal_plans
   for all using (auth.uid() = user_id);
+
+-- Google tokens: private to owner
+create policy "users manage own google tokens" on google_tokens
+  for all using (auth.uid() = user_id);
+
+-- Restaurants: public read, admin write
+create policy "public can read restaurants" on restaurants
+  for select using (true);
+
+create policy "admin can write restaurants" on restaurants
+  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
+
+create policy "public can read restaurant dishes" on restaurant_dishes
+  for select using (true);
+
+create policy "admin can write restaurant dishes" on restaurant_dishes
+  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
+
+create policy "public can read restaurant photos" on restaurant_photos
+  for select using (true);
+
+create policy "admin can write restaurant photos" on restaurant_photos
+  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
+  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
+
+-- Storage: a public bucket "restaurant-images" holds uploaded images
+-- (restaurant photos under restaurants/, recipe covers under recipes/),
+-- with authenticated upload allowed via storage policies.
 
 -- Sample recipe
 insert into recipes (slug, title_zh, title_en, description_zh, description_en, instructions, locale_primary, prep_time_mins, cook_time_mins, servings, tags)

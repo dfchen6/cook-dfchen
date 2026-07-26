@@ -1,10 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/admin';
 import RecipeEditForm from '@/components/admin/RecipeEditForm';
 import type { RecipeWithIngredients } from '@/lib/supabase/types';
-
-const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
 export default async function RecipeEditPage({
   params,

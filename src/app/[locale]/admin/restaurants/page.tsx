@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/admin';
 import DeleteRestaurantButton from '@/components/admin/DeleteRestaurantButton';
 import BatchImportRestaurantsForm from '@/components/admin/BatchImportRestaurantsForm';
 import type { Restaurant } from '@/lib/supabase/types';
 
-const ADMIN_EMAIL = 'dfchen6@gmail.com';
 const PRICE = ['', '$', '$$', '$$$', '$$$$'];
 
 type Row = Pick<Restaurant, 'id' | 'name' | 'name_zh' | 'city' | 'cuisine' | 'overall_rating' | 'price_level' | 'visited_at' | 'tags'>;

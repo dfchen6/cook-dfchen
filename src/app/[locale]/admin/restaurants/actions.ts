@@ -1,9 +1,8 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/admin';
 import { revalidatePath } from 'next/cache';
-
-const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
 async function assertAdmin() {
   const supabase = await createClient();

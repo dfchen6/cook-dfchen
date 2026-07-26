@@ -4,6 +4,15 @@ import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+function callbackUrl(origin: string | null, formData: FormData): string {
+  const next = formData.get('next');
+  const suffix =
+    typeof next === 'string' && next.startsWith('/')
+      ? `?next=${encodeURIComponent(next)}`
+      : '';
+  return `${origin}/auth/callback${suffix}`;
+}
+
 export async function signInWithEmail(formData: FormData) {
   const email = formData.get('email') as string;
   const supabase = await createClient();
@@ -13,7 +22,7 @@ export async function signInWithEmail(formData: FormData) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: callbackUrl(origin, formData),
     },
   });
 
@@ -25,7 +34,7 @@ export async function signOut() {
   await supabase.auth.signOut();
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData: FormData) {
   const supabase = await createClient();
   const headersList = await headers();
   const origin = headersList.get('origin');
@@ -33,7 +42,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: callbackUrl(origin, formData),
     },
   });
 

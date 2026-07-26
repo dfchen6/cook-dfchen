@@ -1,10 +1,10 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/admin';
 import { revalidatePath } from 'next/cache';
+import { PRIVATE_RECIPES } from '@/lib/private-recipes';
 import type { RecipeImportItem } from '@/lib/supabase/types';
-
-const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
 async function assertAdmin() {
   const supabase = await createClient();
@@ -15,9 +15,10 @@ async function assertAdmin() {
   return supabase;
 }
 
-export async function upsertRecipe(data: RecipeImportItem): Promise<{ error: string | null; slug?: string }> {
-  const supabase = await assertAdmin();
-
+async function upsertRecipeWithClient(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  data: RecipeImportItem
+): Promise<{ error: string | null; slug?: string }> {
   const { ingredients, ...fields } = data;
 
   const recipeRow = {
@@ -79,20 +80,40 @@ export async function upsertRecipe(data: RecipeImportItem): Promise<{ error: str
     if (shareError) return { error: shareError.message };
   }
 
-  revalidatePath('/');
-  revalidatePath(`/recipes/${recipe.slug}`);
   return { error: null, slug: recipe.slug };
+}
+
+export async function upsertRecipe(data: RecipeImportItem): Promise<{ error: string | null; slug?: string }> {
+  const supabase = await assertAdmin();
+  const result = await upsertRecipeWithClient(supabase, data);
+
+  if (!result.error && result.slug) {
+    revalidatePath('/');
+    revalidatePath(`/recipes/${result.slug}`);
+  }
+
+  return result;
 }
 
 export async function batchImportRecipes(
   items: RecipeImportItem[]
 ): Promise<Array<{ slug: string; error: string | null }>> {
+  const supabase = await assertAdmin();
   const results: Array<{ slug: string; error: string | null }> = [];
   for (const item of items) {
-    const result = await upsertRecipe(item);
+    const result = await upsertRecipeWithClient(supabase, item);
     results.push({ slug: item.slug, error: result.error });
   }
+  revalidatePath('/');
   return results;
+}
+
+export async function importPrivateRecipes(): Promise<{ imported: number; failed: number }> {
+  const results = await batchImportRecipes(PRIVATE_RECIPES);
+  return {
+    imported: results.filter((result) => !result.error).length,
+    failed: results.filter((result) => result.error).length,
+  };
 }
 
 export async function deleteRecipe(id: string): Promise<{ error: string | null }> {

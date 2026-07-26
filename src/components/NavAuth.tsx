@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/admin';
 import NavAuthClient from './NavAuthClient';
-
-const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
 export default async function NavAuth({ locale }: { locale: string }) {
   const supabase = await createClient();

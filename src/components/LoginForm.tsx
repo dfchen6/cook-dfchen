@@ -12,15 +12,15 @@ async function action(_prev: State, formData: FormData): Promise<State> {
   return { error: result.error, sent: !result.error };
 }
 
-export default function LoginForm({ locale: _locale }: { locale: string }) {
+export default function LoginForm({ locale: _locale, next }: { locale: string; next?: string | null }) {
   const [state, dispatch, pending] = useActionState(action, initial);
 
   if (state.sent) {
     return (
-      <div className="rounded-lg bg-green-50 px-4 py-6 text-center">
+      <div className="rounded-lg bg-green-50 px-4 py-6 text-center dark:bg-green-950">
         <p className="text-lg">📬</p>
-        <p className="mt-2 font-medium text-green-800">Check your email</p>
-        <p className="mt-1 text-sm text-green-700">We sent you a magic link to sign in.</p>
+        <p className="mt-2 font-medium text-green-800 dark:text-green-300">Check your email</p>
+        <p className="mt-1 text-sm text-green-700 dark:text-green-400">We sent you a magic link to sign in.</p>
       </div>
     );
   }
@@ -28,9 +28,10 @@ export default function LoginForm({ locale: _locale }: { locale: string }) {
   return (
     <div className="flex flex-col gap-4">
       <form action={signInWithGoogle}>
+        {next && <input type="hidden" name="next" value={next} />}
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
         >
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
@@ -43,14 +44,15 @@ export default function LoginForm({ locale: _locale }: { locale: string }) {
       </form>
 
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-stone-200" />
+        <div className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
         <span className="text-xs text-stone-400">or</span>
-        <div className="h-px flex-1 bg-stone-200" />
+        <div className="h-px flex-1 bg-stone-200 dark:bg-stone-700" />
       </div>
 
       <form action={dispatch} className="flex flex-col gap-4">
+        {next && <input type="hidden" name="next" value={next} />}
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-medium text-stone-700">
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
             Email
           </label>
           <input
@@ -59,7 +61,7 @@ export default function LoginForm({ locale: _locale }: { locale: string }) {
             type="email"
             required
             placeholder="you@example.com"
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200 dark:border-stone-600 dark:bg-stone-800 dark:focus:ring-stone-700"
           />
         </div>
         {state.error && (
@@ -68,7 +70,7 @@ export default function LoginForm({ locale: _locale }: { locale: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300"
         >
           {pending ? 'Sending…' : 'Send magic link'}
         </button>

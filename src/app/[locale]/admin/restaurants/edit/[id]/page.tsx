@@ -1,10 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { ADMIN_EMAIL } from '@/lib/admin';
 import RestaurantEditForm from '@/components/admin/RestaurantEditForm';
 import type { RestaurantWithDetails } from '@/lib/supabase/types';
-
-const ADMIN_EMAIL = 'dfchen6@gmail.com';
 
 export default async function RestaurantEditPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;

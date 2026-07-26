@@ -47,7 +47,7 @@ export default async function MealPlanPage({
 
       {justConnected && (
         <div className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
-          ✓ Google Calendar connected! Click "Sync" to push your meal plans.
+          ✓ Google Calendar connected! Click &quot;Sync&quot; to push your meal plans.
         </div>
       )}
 
