@@ -13,7 +13,10 @@
     "cookTime": "烹饪时间",
     "addToMealPlan": "加入饮食计划",
     "mins": "分钟",
-    "video": "视频"
+    "video": "视频",
+    "stepCounter": "第 {current} / {total} 步",
+    "prevStep": "上一步",
+    "nextStep": "下一步"
   },
   "recipelist": {
     "title": "DC的厨房",

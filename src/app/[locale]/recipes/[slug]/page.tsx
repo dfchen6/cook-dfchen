@@ -13,8 +13,10 @@ import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import IngredientList from '@/components/IngredientList';
 import AddToMealPlan from '@/components/AddToMealPlan';
+import RecipeSteps from '@/components/RecipeSteps';
 import Image from 'next/image';
 import type { RecipeWithIngredients } from '@/lib/supabase/types';
+import { parseInstructionSteps } from '@/lib/parse-steps';
 
 export default async function RecipeDetailPage({
   params,
@@ -55,6 +57,8 @@ export default async function RecipeDetailPage({
       ? (recipe.description_zh ?? recipe.description_en)
       : (recipe.description_en ?? recipe.description_zh);
 
+  const steps = parseInstructionSteps(instructions);
+
   return (
     <article className="mx-auto max-w-2xl">
       {/* Cover image */}
@@ -92,12 +96,10 @@ export default async function RecipeDetailPage({
         <IngredientList ingredients={recipe.ingredients} />
       </section>
 
-      {/* Instructions — natural language */}
+      {/* Instructions — one step at a time, swipeable on mobile */}
       <section>
         <h2 className="mb-4 text-xl font-semibold">{t('instructions')}</h2>
-        <div className="prose prose-stone max-w-none whitespace-pre-line leading-8 text-stone-700 dark:text-stone-300">
-          {instructions}
-        </div>
+        <RecipeSteps steps={steps} />
       </section>
 
       {/* Tags */}

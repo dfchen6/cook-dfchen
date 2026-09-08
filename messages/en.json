@@ -13,7 +13,10 @@
     "cookTime": "Cook Time",
     "addToMealPlan": "Add to Meal Plan",
     "mins": "min",
-    "video": "Video"
+    "video": "Video",
+    "stepCounter": "Step {current} of {total}",
+    "prevStep": "Previous step",
+    "nextStep": "Next step"
   },
   "recipelist": {
     "title": "DC's Kitchen",
