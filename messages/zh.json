@@ -16,7 +16,9 @@
     "video": "视频",
     "stepCounter": "第 {current} / {total} 步",
     "prevStep": "上一步",
-    "nextStep": "下一步"
+    "nextStep": "下一步",
+    "viewList": "列表",
+    "viewSlide": "滑动"
   },
   "recipelist": {
     "title": "DC的厨房",

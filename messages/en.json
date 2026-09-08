@@ -16,7 +16,9 @@
     "video": "Video",
     "stepCounter": "Step {current} of {total}",
     "prevStep": "Previous step",
-    "nextStep": "Next step"
+    "nextStep": "Next step",
+    "viewList": "List",
+    "viewSlide": "Slide"
   },
   "recipelist": {
     "title": "DC's Kitchen",
