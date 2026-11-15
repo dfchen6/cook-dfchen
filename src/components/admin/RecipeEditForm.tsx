@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { upsertRecipe } from '@/app/[locale]/admin/actions';
 import ImageUploadInput from '@/components/admin/ImageUploadInput';
 import type { RecipeImportItem } from '@/lib/supabase/types';
+import { extractUrl } from '@/lib/video';
 
 type IngredientRow = {
   name_zh: string;
@@ -165,8 +166,13 @@ export default function RecipeEditForm({ locale, initial }: Props) {
             path={`recipes/${initial?.slug ?? crypto.randomUUID()}/cover`}
           />
           <div>
-            <label className={labelCls}>YouTube URL</label>
-            <input value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} className={inputCls} placeholder="https://youtube.com/watch?v=..." />
+            <label className={labelCls}>Video URL (YouTube / 小红书)</label>
+            <input
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(extractUrl(e.target.value) ?? e.target.value)}
+              className={inputCls}
+              placeholder="https://youtube.com/watch?v=... 或 http://xhslink.com/..."
+            />
           </div>
         </div>
       </div>

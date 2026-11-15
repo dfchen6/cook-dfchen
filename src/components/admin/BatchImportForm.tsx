@@ -114,7 +114,7 @@ export default function BatchImportForm() {
                   <th className="px-3 py-2 text-left font-medium text-stone-500">Slug</th>
                   <th className="px-3 py-2 text-left font-medium text-stone-500">ZH Title</th>
                   <th className="px-3 py-2 text-left font-medium text-stone-500">EN Title</th>
-                  <th className="px-3 py-2 text-left font-medium text-stone-500">YouTube</th>
+                  <th className="px-3 py-2 text-left font-medium text-stone-500">Video</th>
                   <th className="px-3 py-2 text-left font-medium text-stone-500">Ingredients</th>
                 </tr>
               </thead>

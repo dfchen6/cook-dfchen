@@ -1,14 +1,4 @@
 import { notFound, redirect } from 'next/navigation';
-
-function extractYoutubeId(url: string): string {
-  try {
-    const u = new URL(url);
-    if (u.hostname === 'youtu.be') return u.pathname.slice(1);
-    return u.searchParams.get('v') ?? url;
-  } catch {
-    return url;
-  }
-}
 import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import IngredientList from '@/components/IngredientList';
@@ -17,6 +7,7 @@ import RecipeSteps from '@/components/RecipeSteps';
 import Image from 'next/image';
 import type { RecipeWithIngredients } from '@/lib/supabase/types';
 import { parseInstructionSteps } from '@/lib/parse-steps';
+import { parseVideoUrl } from '@/lib/video';
 
 export default async function RecipeDetailPage({
   params,
@@ -58,6 +49,7 @@ export default async function RecipeDetailPage({
       : (recipe.description_en ?? recipe.description_zh);
 
   const steps = parseInstructionSteps(instructions);
+  const video = parseVideoUrl(recipe.youtube_url);
 
   return (
     <article className="mx-auto max-w-2xl">
@@ -113,19 +105,38 @@ export default async function RecipeDetailPage({
         </div>
       )}
 
-      {/* YouTube embed */}
-      {recipe.youtube_url && (
+      {/* Video — YouTube embeds; Xiaohongshu blocks iframes, so link out instead */}
+      {video && (
         <div className="mt-10">
           <h2 className="mb-4 text-xl font-semibold">{t('video')}</h2>
-          <div className="aspect-video w-full overflow-hidden rounded-xl">
-            <iframe
-              src={`https://www.youtube.com/embed/${extractYoutubeId(recipe.youtube_url)}`}
-              title={recipe.title_en}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="h-full w-full"
-            />
-          </div>
+          {video.platform === 'youtube' ? (
+            <div className="aspect-video w-full overflow-hidden rounded-xl">
+              <iframe
+                src={`https://www.youtube.com/embed/${video.embedId}`}
+                title={recipe.title_en}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="h-full w-full"
+              />
+            </div>
+          ) : (
+            <a
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-3 rounded-xl border px-5 py-4 transition-colors ${
+                video.platform === 'xiaohongshu'
+                  ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950'
+                  : 'border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-300 dark:hover:bg-stone-800'
+              }`}
+            >
+              <span className="text-2xl">{video.platform === 'xiaohongshu' ? '📕' : '▶'}</span>
+              <span className="font-medium">
+                {video.platform === 'xiaohongshu' ? t('watchOnXiaohongshu') : t('watchVideo')}
+              </span>
+              <span className="ml-auto">↗</span>
+            </a>
+          )}
         </div>
       )}
 
