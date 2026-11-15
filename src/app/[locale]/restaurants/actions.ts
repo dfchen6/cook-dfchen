@@ -1,14 +1,15 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { ADMIN_EMAIL } from '@/lib/admin';
 import { revalidatePath } from 'next/cache';
 
-async function assertAdmin() {
+// Restaurants are a private per-user journal: every action is scoped to the
+// signed-in user. RLS (supabase/restaurants_per_user.sql) enforces the same rule.
+async function requireUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) throw new Error('Unauthorized');
-  return supabase;
+  if (!user) throw new Error('Unauthorized');
+  return { supabase, user };
 }
 
 export type DishInput = {
@@ -51,8 +52,10 @@ export type RestaurantInput = {
 };
 
 export async function upsertRestaurant(data: RestaurantInput): Promise<{ error: string | null; id?: string }> {
-  const supabase = await assertAdmin();
+  const { supabase, user } = await requireUser();
   const { dishes, photos, id, ...fields } = data;
+  // Ownership always comes from the session, never from client input (e.g. batch-import JSON).
+  delete (fields as { user_id?: unknown }).user_id;
 
   let restaurantId = id;
 
@@ -63,15 +66,18 @@ export async function upsertRestaurant(data: RestaurantInput): Promise<{ error: 
   if (restaurantId) {
     // Update existing
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('restaurants') as any)
+    const { data: updated, error } = await (supabase.from('restaurants') as any)
       .update({ ...fields, updated_at: new Date().toISOString() })
-      .eq('id', restaurantId);
+      .eq('id', restaurantId)
+      .eq('user_id', user.id)
+      .select('id');
     if (error) return { error: error.message };
+    if (!updated?.length) return { error: 'Restaurant not found' };
   } else {
     // Insert new
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: row, error } = await (supabase.from('restaurants') as any)
-      .insert(fields)
+      .insert({ ...fields, user_id: user.id })
       .select()
       .single();
     if (error) return { error: error.message };
@@ -135,8 +141,8 @@ export async function batchImportRestaurants(
 }
 
 export async function deleteRestaurant(id: string): Promise<{ error: string | null }> {
-  const supabase = await assertAdmin();
-  const { error } = await supabase.from('restaurants').delete().eq('id', id);
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase.from('restaurants').delete().eq('id', id).eq('user_id', user.id);
   if (error) return { error: error.message };
   revalidatePath('/restaurants');
   return { error: null };

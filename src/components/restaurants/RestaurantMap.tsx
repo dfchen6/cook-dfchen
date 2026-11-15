@@ -39,7 +39,7 @@ export default function RestaurantMap({ restaurants, locale }: Props) {
   if (mapped.length === 0) {
     return (
       <div className="flex h-80 items-center justify-center rounded-xl border border-stone-200 bg-stone-50 text-stone-400 dark:border-stone-700 dark:bg-stone-900">
-        <p className="text-sm">No restaurants with coordinates yet. Add lat/lng in the admin.</p>
+        <p className="text-sm">No restaurants with coordinates yet. Add lat/lng under Manage.</p>
       </div>
     );
   }

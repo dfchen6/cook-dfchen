@@ -18,7 +18,7 @@ export type Database = {
       };
       restaurants: {
         Row: Restaurant;
-        Insert: Omit<Restaurant, 'id' | 'created_at' | 'updated_at'>;
+        Insert: Omit<Restaurant, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { user_id?: string };
         Update: Partial<Omit<Restaurant, 'id' | 'created_at'>>;
       };
       restaurant_dishes: {
@@ -124,6 +124,7 @@ export type RecipeWithIngredients = Recipe & {
 
 export type Restaurant = {
   id: string;
+  user_id: string;
   name: string;
   name_zh: string | null;
   address: string | null;

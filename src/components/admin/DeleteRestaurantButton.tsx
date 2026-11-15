@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { deleteRestaurant } from '@/app/[locale]/admin/restaurants/actions';
+import { deleteRestaurant } from '@/app/[locale]/restaurants/actions';
 
 export default function DeleteRestaurantButton({ id, name, locale }: { id: string; name: string; locale: string }) {
   const [pending, startTransition] = useTransition();

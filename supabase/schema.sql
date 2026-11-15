@@ -70,6 +70,7 @@ create table google_tokens (
 -- Restaurants (food journal)
 create table restaurants (
   id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users(id) on delete cascade default auth.uid(),
   name            text not null,
   name_zh         text,
   address         text,
@@ -189,27 +190,25 @@ create policy "users can manage own meal plans" on meal_plans
 create policy "users manage own google tokens" on google_tokens
   for all using (auth.uid() = user_id);
 
--- Restaurants: public read, admin write
-create policy "public can read restaurants" on restaurants
-  for select using (true);
+-- Restaurants: private per-user journal (see restaurants_per_user.sql)
+create index restaurants_user_id_idx on restaurants(user_id);
 
-create policy "admin can write restaurants" on restaurants
-  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
+create policy "owners manage their restaurants" on restaurants
+  for all to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
-create policy "public can read restaurant dishes" on restaurant_dishes
-  for select using (true);
+create policy "owners manage their restaurant dishes" on restaurant_dishes
+  for all to authenticated
+  using (exists (select 1 from restaurants r where r.id = restaurant_id and r.user_id = auth.uid()))
+  with check (exists (select 1 from restaurants r where r.id = restaurant_id and r.user_id = auth.uid()));
 
-create policy "admin can write restaurant dishes" on restaurant_dishes
-  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
+create policy "owners manage their restaurant photos" on restaurant_photos
+  for all to authenticated
+  using (exists (select 1 from restaurants r where r.id = restaurant_id and r.user_id = auth.uid()))
+  with check (exists (select 1 from restaurants r where r.id = restaurant_id and r.user_id = auth.uid()));
 
-create policy "public can read restaurant photos" on restaurant_photos
-  for select using (true);
-
-create policy "admin can write restaurant photos" on restaurant_photos
-  for all using (auth.jwt() ->> 'email' = 'dfchen6@gmail.com')
-  with check (auth.jwt() ->> 'email' = 'dfchen6@gmail.com');
+-- Per-user restaurant image policies: see restaurants_per_user.sql (section 4).
 
 -- Storage: a public bucket holds restaurant photos and recipe covers.
 insert into storage.buckets (id, name, public)

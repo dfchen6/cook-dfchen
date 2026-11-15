@@ -75,15 +75,19 @@ export default function NavAuthClient({
               >
                 Recipes
               </Link>
-              <Link
-                href={`/${locale}/admin/restaurants`}
-                onClick={() => setOpen(false)}
-                className="flex w-full items-center px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-              >
-                Restaurants
-              </Link>
             </div>
           )}
+
+          {/* Personal restaurant diary — every signed-in user has their own */}
+          <div className="border-b border-stone-100 py-1 dark:border-stone-800">
+            <Link
+              href={`/${locale}/restaurants`}
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
+            >
+              {locale === 'zh' ? '我的餐厅' : 'My restaurants'}
+            </Link>
+          </div>
 
           {/* Logout */}
           <div className="py-1">

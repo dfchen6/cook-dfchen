@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
@@ -15,11 +15,14 @@ function Stars({ rating }: { rating: number }) {
 export default async function RestaurantDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/restaurants/${id}`)}`);
 
   const { data: raw } = await supabase
     .from('restaurants')
     .select('*, restaurant_dishes(*), restaurant_photos(*)')
     .eq('id', id)
+    .eq('user_id', user.id)
     .order('sort_order', { referencedTable: 'restaurant_dishes', ascending: true })
     .order('sort_order', { referencedTable: 'restaurant_photos', ascending: true })
     .single();

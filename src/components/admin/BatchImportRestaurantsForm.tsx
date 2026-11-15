@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { batchImportRestaurants, type RestaurantInput } from '@/app/[locale]/admin/restaurants/actions';
+import { batchImportRestaurants, type RestaurantInput } from '@/app/[locale]/restaurants/actions';
 
 const SCHEMA_EXAMPLE = `[
   {

@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { upsertRestaurant, type DishInput, type PhotoInput } from '@/app/[locale]/admin/restaurants/actions';
+import { upsertRestaurant, type DishInput, type PhotoInput } from '@/app/[locale]/restaurants/actions';
 import type { RestaurantWithDetails } from '@/lib/supabase/types';
 import ImageUploadInput from './ImageUploadInput';
 
 type Props = {
   locale: string;
+  userId: string;
   initial?: RestaurantWithDetails | null;
 };
 
@@ -17,8 +18,11 @@ const labelCls = 'block text-xs font-medium text-stone-500 dark:text-stone-400 m
 const sectionCls = 'mb-8';
 const headingCls = 'mb-3 text-sm font-semibold uppercase tracking-wider text-stone-400';
 
-export default function RestaurantEditForm({ locale, initial }: Props) {
+export default function RestaurantEditForm({ locale, userId, initial }: Props) {
   const router = useRouter();
+  // Uploads live under restaurants/<uid>/... so storage RLS can scope them per user.
+  const [folderId] = useState(() => initial?.id ?? crypto.randomUUID());
+  const uploadBase = `restaurants/${userId}/${folderId}`;
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -104,7 +108,7 @@ export default function RestaurantEditForm({ locale, initial }: Props) {
         setError(result.error);
       } else {
         setSuccess('Saved!');
-        if (!initial) router.push(`/${locale}/admin/restaurants`);
+        if (!initial) router.push(`/${locale}/restaurants/manage`);
       }
     });
   }
@@ -205,7 +209,7 @@ export default function RestaurantEditForm({ locale, initial }: Props) {
           <ImageUploadInput
             value={coverImage}
             onChange={setCoverImage}
-            path={`restaurants/${initial?.id ?? crypto.randomUUID()}/cover`}
+            path={`${uploadBase}/cover`}
             label="Cover image"
           />
         </div>
@@ -256,7 +260,7 @@ export default function RestaurantEditForm({ locale, initial }: Props) {
                   <ImageUploadInput
                     value={dish.image_url ?? ''}
                     onChange={(url) => updateDish(i, { image_url: url })}
-                    path={`restaurants/${initial?.id ?? crypto.randomUUID()}/dishes/${i}`}
+                    path={`${uploadBase}/dishes/${i}`}
                     label="Dish photo"
                   />
                 </div>
@@ -282,7 +286,7 @@ export default function RestaurantEditForm({ locale, initial }: Props) {
               <ImageUploadInput
                 value={photo.image_url}
                 onChange={(url) => updatePhoto(i, { image_url: url })}
-                path={`restaurants/${initial?.id ?? crypto.randomUUID()}/photos/${i}`}
+                path={`${uploadBase}/photos/${i}`}
                 label="Photo"
               />
               <div className="mt-2">

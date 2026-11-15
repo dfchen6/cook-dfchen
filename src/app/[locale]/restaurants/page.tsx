@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import RestaurantCard from '@/components/restaurants/RestaurantCard';
 import RestaurantMapWrapper from '@/components/restaurants/RestaurantMapWrapper';
@@ -24,10 +26,13 @@ export default async function RestaurantsPage({
   const { q, city, cuisine, tag, view } = await searchParams;
 
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/restaurants`)}`);
 
   let query = supabase
     .from('restaurants')
     .select('id, name, name_zh, city, country, cuisine, tags, overall_rating, price_level, visited_at, cover_image, lat, lng')
+    .eq('user_id', user.id)
     .order('visited_at', { ascending: false });
 
   if (q) query = query.or(`name.ilike.%${q}%,name_zh.ilike.%${q}%,notes.ilike.%${q}%`);
@@ -58,6 +63,13 @@ export default async function RestaurantsPage({
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">{locale === 'zh' ? '餐厅日记' : 'Restaurant Diary'}</h1>
+        <div className="flex items-center gap-2">
+        <Link
+          href={`/${locale}/restaurants/manage`}
+          className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800"
+        >
+          {locale === 'zh' ? '管理' : 'Manage'}
+        </Link>
         <div className="flex items-center gap-1 rounded-lg border border-stone-200 p-1 text-sm dark:border-stone-700">
           <a
             href={buildUrl({ view: 'list' })}
@@ -71,6 +83,7 @@ export default async function RestaurantsPage({
           >
             {locale === 'zh' ? '地图' : 'Map'}
           </a>
+        </div>
         </div>
       </div>
 

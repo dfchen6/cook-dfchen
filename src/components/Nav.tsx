@@ -3,10 +3,14 @@ import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import LocaleToggle from './LocaleToggle';
 import NavAuth from './NavAuth';
+import { createClient } from '@/lib/supabase/server';
 import ThemeToggle from './ThemeToggle';
 
 export default async function Nav({ locale }: { locale: string }) {
   const t = await getTranslations('nav');
+  // Restaurants are a private per-user diary, so only show the link when signed in.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   return (
     <header className="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
@@ -19,9 +23,11 @@ export default async function Nav({ locale }: { locale: string }) {
           <Link href={`/${locale}`} className="hidden text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 sm:block">
             {t('recipes')}
           </Link>
-          <Link href={`/${locale}/restaurants`} className="hidden text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 sm:block">
-            {t('restaurants')}
-          </Link>
+          {user && (
+            <Link href={`/${locale}/restaurants`} className="hidden text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 sm:block">
+              {t('restaurants')}
+            </Link>
+          )}
           <Link href={`/${locale}/meal-plan`} className="text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100">
             {t('mealPlan')}
           </Link>
