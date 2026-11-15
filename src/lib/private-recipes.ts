@@ -12,6 +12,7 @@ type RecipeInput = {
   steps_en: string;
   prep?: number;
   cook?: number;
+  video_url?: string;
 };
 
 const CATEGORY_TAG: Record<RecipeInput['category'], string> = {
@@ -79,6 +80,7 @@ const recipe = ({
   steps_en,
   prep = 10,
   cook = 15,
+  video_url,
 }: RecipeInput): RecipeImportItem => ({
   slug,
   title_zh,
@@ -101,6 +103,7 @@ const recipe = ({
   is_public: false,
   shared_with: [],
   cover_image: coverImage(slug),
+  youtube_url: video_url ?? null,
   ingredients: ingredients.map(([name_zh, name_en, quantity, unit]) => ({
     name_zh,
     name_en,
@@ -190,4 +193,5 @@ export const PRIVATE_RECIPES: RecipeImportItem[] = [
   R({ slug: 'roasted-lamb-leg', title_zh: '烤羊腿', title_en: 'Roasted Lamb Leg', category: 'hidden menu', prep: 25, cook: 100, ingredients: [['羊腿', 'lamb leg', '1.5', 'kg'], ['蒜', 'garlic', '10', 'cloves'], ['迷迭香', 'rosemary', '4', 'sprigs'], ['孜然粉', 'ground cumin', '2', 'tbsp'], ['盐', 'salt', '2', 'tsp'], ['橄榄油', 'olive oil', '2', 'tbsp']], steps_zh: '1. 羊腿划口，塞入蒜和迷迭香，抹盐、孜然和橄榄油腌过夜。\n2. 200°C 烤 25 分钟后降至 170°C 烤约 70 分钟。\n3. 静置 15 分钟后切片。', steps_en: '1. Score lamb leg, insert garlic and rosemary, and marinate overnight with cumin, salt, and oil.\n2. Roast at 200°C for 25 minutes, then at 170°C for about 70 minutes.\n3. Rest 15 minutes before carving.' }),
   R({ slug: 'toothpick-lamb', title_zh: '牙签羊肉', title_en: 'Toothpick Lamb', category: 'hidden menu', prep: 25, cook: 12, ingredients: [['羊肉', 'lamb', '450', 'g'], ['孜然粉', 'ground cumin', '2', 'tsp'], ['辣椒粉', 'chili powder', '1', 'tsp'], ['芝麻', 'sesame seeds', '1', 'tbsp'], ['生抽', 'light soy sauce', '1', 'tbsp'], ['牙签', 'toothpicks', '30', '']], steps_zh: '1. 羊肉切小块，加生抽、孜然和辣椒粉腌 20 分钟。\n2. 用牙签串好，平底锅少油煎至焦香。\n3. 撒芝麻和额外孜然粉翻匀。', steps_en: '1. Cube lamb and marinate with soy sauce, cumin, and chili powder.\n2. Thread onto toothpicks and pan-fry in a little oil until browned.\n3. Toss with sesame and extra cumin before serving.' }),
   R({ slug: 'peking-duck-set', title_zh: '北京烤鸭套餐', title_en: 'Peking Duck Set', category: 'hidden menu', prep: 30, cook: 90, ingredients: [['鸭子', 'duck', '1', 'about 2kg'], ['荷叶饼', 'mandarin pancakes', '16', ''], ['甜面酱', 'sweet bean sauce', '100', 'g'], ['黄瓜', 'cucumber', '1', ''], ['葱白', 'scallion whites', '4', ''], ['麦芽糖', 'maltose', '2', 'tbsp']], steps_zh: '1. 鸭子风干后刷麦芽糖水，晾至表皮干燥。\n2. 200°C 烤约 75 分钟，期间视上色盖锡纸。\n3. 片皮肉，配荷叶饼、甜面酱、黄瓜和葱丝；鸭架可另煮汤。', steps_en: '1. Air-dry duck, brush with maltose water, and dry the skin completely.\n2. Roast at 200°C for about 75 minutes, tenting if it browns too quickly.\n3. Slice skin and meat; serve with pancakes, bean sauce, cucumber, and scallion. Use the carcass for soup.' }),
+  R({ slug: 'sichuan-numbing-chicken', title_zh: '椒麻鸡', title_en: 'Sichuan Numbing Chicken', category: 'hidden menu', prep: 20, cook: 25, video_url: 'http://xhslink.com/o/hYvzwiPRWm', ingredients: [['鸡腿', 'chicken legs', '2', 'about 500g'], ['花椒', 'Sichuan peppercorns', '2', 'tbsp'], ['青花椒', 'green Sichuan peppercorns', '1', 'tbsp'], ['小米椒', 'bird\'s eye chilies', '5', ''], ['蒜', 'garlic', '6', 'cloves'], ['姜', 'ginger', '4', 'slices'], ['葱', 'scallion', '3', 'stalks'], ['香菜', 'cilantro', '30', 'g'], ['生抽', 'light soy sauce', '2', 'tbsp'], ['香醋', 'Chinese black vinegar', '1', 'tbsp']], steps_zh: '1. 鸡腿加姜片、葱段和料酒冷水下锅，煮 18 分钟后关火焖 10 分钟。\n2. 捞出冰水浸泡至凉透，沥干后手撕成条。\n3. 花椒和青花椒干锅小火焙香，捣碎；蒜、姜、小米椒切末，与花椒碎、生抽、香醋、香油和少许鸡汤调成椒麻汁。\n4. 鸡肉装盘，浇椒麻汁，撒香菜和葱花。', steps_en: '1. Poach chicken legs with ginger, scallion, and wine; turn off heat and steep for 10 minutes.\n2. Chill in ice water until cold, then shred by hand.\n3. Toast and crush peppercorns; mix with minced garlic, ginger, chilies, soy sauce, vinegar, sesame oil, and a little broth.\n4. Arrange chicken, drizzle with numbing sauce, and garnish with cilantro and scallion.' }),
 ];
