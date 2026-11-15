@@ -5,9 +5,9 @@
  * 
  * If no image path is provided, uses: scripts/covers/sichuan-numbing-chicken.jpg
  * 
- * Requires .env.local with:
- *   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
- *   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+ * Credentials can be provided via:
+ *   1. Environment variables (for Cloud Agent): NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ *   2. .env.local file (for local development)
  */
 
 import fs from 'node:fs';
@@ -28,10 +28,14 @@ function loadEnvFile(envPath) {
   return values;
 }
 
-const env = loadEnvFile(path.join(__dirname, '..', '.env.local'));
-if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ Missing credentials in .env.local');
-  console.error('   Required: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+const fileEnv = loadEnvFile(path.join(__dirname, '..', '.env.local'));
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || fileEnv.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || fileEnv.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Missing Supabase credentials');
+  console.error('   Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as environment variables');
+  console.error('   Or add them to .env.local');
   process.exit(1);
 }
 
@@ -44,7 +48,7 @@ if (!fs.existsSync(imagePath)) {
   process.exit(1);
 }
 
-const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const imageBuffer = fs.readFileSync(imagePath);
 const objectPath = `recipes/${slug}/cover.jpg`;
