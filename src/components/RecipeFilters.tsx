@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import RecipeCard from '@/components/RecipeCard';
-import type { Recipe } from '@/lib/supabase/types';
+import type { Recipe } from '@/lib/types';
 
 type RecipeCardData = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'description_zh' | 'description_en' | 'cover_image' | 'tags' | 'prep_time_mins' | 'cook_time_mins'>;
 

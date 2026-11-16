@@ -2,11 +2,14 @@
 
 import { useRef, useState } from 'react';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { clientAuth, clientStorage } from '@/lib/firebase/client';
+import { isOptimizableImageUrl } from '@/lib/storage-url';
 
 type Props = {
   value: string;
   onChange: (url: string) => void;
+  /** Unused since the Firebase migration (single default bucket); kept for call-site compatibility. */
   bucket?: string;
   path?: string;
   label?: string;
@@ -15,7 +18,6 @@ type Props = {
 export default function ImageUploadInput({
   value,
   onChange,
-  bucket = 'restaurant-images',
   path = `uploads/${crypto.randomUUID()}`,
   label = 'Image',
 }: Props) {
@@ -29,13 +31,14 @@ export default function ImageUploadInput({
     setUploading(true);
     setUploadError(null);
     try {
-      const supabase = createClient();
+      // Storage rules check the Firebase client sign-in, which can lapse independently of the server session.
+      const auth = clientAuth();
+      await auth.authStateReady();
+      if (!auth.currentUser) throw new Error('Please sign out and sign in again to upload images.');
       const ext = file.name.split('.').pop();
-      const uploadPath = `${path}.${ext}`;
-      const { error } = await supabase.storage.from(bucket).upload(uploadPath, file, { upsert: true });
-      if (error) throw error;
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(uploadPath);
-      onChange(publicUrl);
+      const objectRef = ref(clientStorage(), `${path}.${ext}`);
+      await uploadBytes(objectRef, file, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
+      onChange(await getDownloadURL(objectRef));
     } catch (err) {
       setUploadError((err as Error).message);
     } finally {
@@ -52,7 +55,7 @@ export default function ImageUploadInput({
       {/* Preview */}
       {value && (
         <div className="relative h-32 w-full overflow-hidden rounded-lg border border-stone-200 dark:border-stone-700">
-          <Image src={value} alt="" fill className="object-cover" />
+          <Image src={value} alt="" fill unoptimized={!isOptimizableImageUrl(value)} className="object-cover" />
           <button
             type="button"
             onClick={() => onChange('')}

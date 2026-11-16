@@ -1,9 +1,8 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { ADMIN_EMAIL } from '@/lib/admin';
+import { getCurrentUser, isAdminUser } from '@/lib/auth';
+import { getRecipeById } from '@/lib/data/recipes';
 import RecipeEditForm from '@/components/admin/RecipeEditForm';
-import type { RecipeWithIngredients } from '@/lib/supabase/types';
 
 export default async function RecipeEditPage({
   params,
@@ -11,24 +10,15 @@ export default async function RecipeEditPage({
   params: Promise<{ locale: string; id: string }>;
 }) {
   const { locale, id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user || user.email !== ADMIN_EMAIL) {
-    redirect(`/${locale}/login`);
+  const user = await getCurrentUser();
+  if (!isAdminUser(user)) {
+    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/admin/edit/${id}`)}`);
   }
 
   let initial = null;
 
   if (id !== 'new') {
-    const { data } = await supabase
-      .from('recipes')
-      .select('*, ingredients(*), recipe_shares(email)')
-      .eq('id', id)
-      .order('sort_order', { referencedTable: 'ingredients', ascending: true })
-      .returns<RecipeWithIngredients[]>()
-      .single();
-
+    const data = await getRecipeById(id);
     if (!data) notFound();
     initial = data;
   }

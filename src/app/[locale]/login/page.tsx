@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
 import LoginForm from '@/components/LoginForm';
 
 export default async function LoginPage({
@@ -11,11 +11,10 @@ export default async function LoginPage({
 }) {
   const { locale } = await params;
   const { error, next } = await searchParams;
-  const safeNext = next?.startsWith('/') ? next : null;
+  const safeNext = next?.startsWith('/') && !next.startsWith('//') ? next : null;
 
   // Already logged in → redirect to destination (or home)
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (user) redirect(safeNext ?? `/${locale}`);
 
   return (

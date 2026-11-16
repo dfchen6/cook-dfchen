@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import type { Restaurant } from '@/lib/supabase/types';
+import type { Restaurant } from '@/lib/types';
 
 const RestaurantMap = dynamic(() => import('./RestaurantMap'), { ssr: false });
 

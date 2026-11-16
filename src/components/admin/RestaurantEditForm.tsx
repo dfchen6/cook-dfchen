@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { upsertRestaurant, type DishInput, type PhotoInput } from '@/app/[locale]/restaurants/actions';
-import type { RestaurantWithDetails } from '@/lib/supabase/types';
+import type { RestaurantWithDetails } from '@/lib/types';
 import ImageUploadInput from './ImageUploadInput';
 
 type Props = {

@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// ===============================================================
+// Cloud Firestore Security Rules — DENY ALL CLIENT ACCESS
+// ===============================================================
+//
+// This app accesses Firestore ONLY from the server, via the Firebase
+// Admin SDK (which bypasses Security Rules). All authorization is
+// enforced in server code. The browser uses the Firebase client SDK
+// solely for Auth and Cloud Storage uploads and never reads or writes
+// Firestore directly.
+//
+// These rules are therefore a defense-in-depth layer: every read and
+// write from any client SDK / REST caller (authenticated or not) is
+// denied on every path.
+//
+// Assumed data model (server-only, for reference):
+//   recipes/{recipeId}                      - recipe fields, ingredients[],
+//                                             shared_with[] (emails), is_public
+//   users/{uid}/mealPlans/{planId}
+//   users/{uid}/restaurants/{restaurantId}  - dishes[], photos[]
+//   users/{uid}/private/googleTokens        - OAuth tokens (never client-readable)
+//
+// If client-side Firestore access is ever introduced, add narrowly
+// scoped, validated `allow` rules above the catch-all below — do NOT
+// loosen the catch-all itself.
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Catch-all: matches every document at any depth (including all
+    // subcollections). No `allow` statement exists anywhere, so all
+    // get/list/create/update/delete requests are denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

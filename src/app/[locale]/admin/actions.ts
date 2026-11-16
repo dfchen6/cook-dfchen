@@ -1,86 +1,32 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
-import { ADMIN_EMAIL } from '@/lib/admin';
 import { revalidatePath } from 'next/cache';
+import { getCurrentUser, isAdminUser } from '@/lib/auth';
+import { adminBucket } from '@/lib/firebase/admin';
+import { publicStorageUrl } from '@/lib/storage-url';
+import {
+  deleteRecipeById,
+  deleteRecipesByIds,
+  listAllRecipes,
+  updateRecipeFieldsBySlug,
+  upsertRecipeBySlug,
+} from '@/lib/data/recipes';
 import { PRIVATE_RECIPES, privateRecipeCoverSource } from '@/lib/private-recipes';
-import type { RecipeImportItem, RecipeWithIngredients } from '@/lib/supabase/types';
+import type { RecipeImportItem, RecipeWithIngredients } from '@/lib/types';
 
 async function assertAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) {
-    throw new Error('Unauthorized');
-  }
-  return supabase;
+  const user = await getCurrentUser();
+  if (!isAdminUser(user)) throw new Error('Unauthorized');
+  return user!;
 }
 
-async function upsertRecipeWithClient(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  data: RecipeImportItem
-): Promise<{ error: string | null; slug?: string }> {
-  const { ingredients, ...fields } = data;
-
-  const recipeRow = {
-    slug: fields.slug,
-    title_zh: fields.title_zh,
-    title_en: fields.title_en,
-    description_zh: fields.description_zh ?? null,
-    description_en: fields.description_en ?? null,
-    instructions: fields.instructions ?? fields.instructions_zh ?? fields.instructions_en ?? '',
-    instructions_zh: fields.instructions_zh ?? null,
-    instructions_en: fields.instructions_en ?? null,
-    locale_primary: fields.locale_primary ?? 'zh',
-    cover_image: fields.cover_image ?? null,
-    youtube_url: fields.youtube_url ?? null,
-    prep_time_mins: fields.prep_time_mins ?? null,
-    cook_time_mins: fields.cook_time_mins ?? null,
-    servings: fields.servings ?? null,
-    tags: fields.tags ?? [],
-    is_public: fields.is_public ?? true,
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recipe, error } = await (supabase.from('recipes') as any)
-    .upsert(recipeRow, { onConflict: 'slug' })
-    .select()
-    .single();
-
-  if (error) return { error: error.message };
-
-  // Replace ingredients
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('ingredients') as any).delete().eq('recipe_id', recipe.id);
-
-  if (ingredients?.length) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: ingError } = await (supabase.from('ingredients') as any).insert(
-      ingredients.map((ing, i) => ({
-        recipe_id: recipe.id,
-        name_zh: ing.name_zh,
-        name_en: ing.name_en,
-        quantity: ing.quantity,
-        unit: ing.unit,
-        sort_order: ing.sort_order ?? i,
-      }))
-    );
-    if (ingError) return { error: ingError.message };
+async function upsertOne(data: RecipeImportItem): Promise<{ error: string | null; slug?: string }> {
+  try {
+    const { slug } = await upsertRecipeBySlug(data);
+    return { error: null, slug };
+  } catch (err) {
+    return { error: (err as Error).message };
   }
-
-  // Replace shares
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('recipe_shares') as any).delete().eq('recipe_id', recipe.id);
-
-  const sharedWith = [...new Set((fields.shared_with ?? []).map((e) => e.trim().toLowerCase()).filter(Boolean))];
-  if (sharedWith.length) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: shareError } = await (supabase.from('recipe_shares') as any).insert(
-      sharedWith.map((email) => ({ recipe_id: recipe.id, email }))
-    );
-    if (shareError) return { error: shareError.message };
-  }
-
-  return { error: null, slug: recipe.slug };
 }
 
 function validateRecipeImport(item: RecipeImportItem): string | null {
@@ -115,23 +61,21 @@ function validateRecipeImport(item: RecipeImportItem): string | null {
 }
 
 export async function upsertRecipe(data: RecipeImportItem): Promise<{ error: string | null; slug?: string }> {
-  const supabase = await assertAdmin();
+  await assertAdmin();
   const validationError = validateRecipeImport(data);
   if (validationError) return { error: validationError };
-  const result = await upsertRecipeWithClient(supabase, data);
-
-  if (!result.error && result.slug) {
+  const result = await upsertOne(data);
+  if (!result.error) {
     revalidatePath('/');
     revalidatePath(`/recipes/${result.slug}`);
   }
-
   return result;
 }
 
 export async function batchImportRecipes(
   items: RecipeImportItem[]
 ): Promise<Array<{ slug: string; error: string | null }>> {
-  const supabase = await assertAdmin();
+  await assertAdmin();
   const results: Array<{ slug: string; error: string | null }> = [];
   for (const item of items) {
     const validationError = validateRecipeImport(item);
@@ -139,7 +83,7 @@ export async function batchImportRecipes(
       results.push({ slug: item.slug || '(missing slug)', error: validationError });
       continue;
     }
-    const result = await upsertRecipeWithClient(supabase, item);
+    const result = await upsertOne(item);
     results.push({ slug: item.slug, error: result.error });
   }
   revalidatePath('/');
@@ -157,7 +101,7 @@ export async function importPrivateRecipes(): Promise<{ imported: number; failed
 export async function syncPrivateRecipeCoverBatch(
   slugs: string[]
 ): Promise<{ synced: number; failed: string[] }> {
-  const supabase = await assertAdmin();
+  await assertAdmin();
   const selected = PRIVATE_RECIPES.filter((recipe) => slugs.includes(recipe.slug)).slice(0, 10);
   const failed: string[] = [];
   let synced = 0;
@@ -166,19 +110,15 @@ export async function syncPrivateRecipeCoverBatch(
     try {
       const response = await fetch(privateRecipeCoverSource(recipe.slug, recipe.title_en));
       if (!response.ok) throw new Error(`Image download failed (${response.status}).`);
-      const { error: uploadError } = await supabase.storage
-        .from('restaurant-images')
-        .upload(`recipes/${recipe.slug}/cover.jpg`, await response.arrayBuffer(), {
-          contentType: response.headers.get('content-type') ?? 'image/jpeg',
-          upsert: true,
-        });
-      if (uploadError) throw uploadError;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateError } = await (supabase.from('recipes') as any)
-        .update({ cover_image: recipe.cover_image })
-        .eq('slug', recipe.slug);
-      if (updateError) throw updateError;
+      const objectPath = `recipes/${recipe.slug}/cover.jpg`;
+      await adminBucket().file(objectPath).save(Buffer.from(await response.arrayBuffer()), {
+        contentType: response.headers.get('content-type') ?? 'image/jpeg',
+        metadata: { cacheControl: 'public, max-age=31536000' },
+      });
+      // Only touch the cover — the recipe may have been edited since it was imported.
+      if (!(await updateRecipeFieldsBySlug(recipe.slug, { cover_image: publicStorageUrl(objectPath) }))) {
+        throw new Error('Recipe not imported yet.');
+      }
       synced += 1;
     } catch {
       failed.push(recipe.slug);
@@ -190,40 +130,32 @@ export async function syncPrivateRecipeCoverBatch(
 }
 
 export async function deleteRecipe(id: string): Promise<{ error: string | null }> {
-  const supabase = await assertAdmin();
-  const { error } = await supabase.from('recipes').delete().eq('id', id);
-  if (error) return { error: error.message };
+  await assertAdmin();
+  try {
+    await deleteRecipeById(id);
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
   revalidatePath('/');
   return { error: null };
 }
 
 export async function getRecipesForCsvExport(): Promise<RecipeWithIngredients[]> {
-  const supabase = await assertAdmin();
-  const { data, error } = await supabase
-    .from('recipes')
-    .select('*, ingredients(*), recipe_shares(email)')
-    .order('created_at', { ascending: false })
-    .order('sort_order', { referencedTable: 'ingredients', ascending: true })
-    .returns<RecipeWithIngredients[]>();
-
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  await assertAdmin();
+  return listAllRecipes();
 }
 
 export async function bulkDeleteRecipes(
   ids: string[]
 ): Promise<{ deleted: number; error: string | null }> {
-  const supabase = await assertAdmin();
+  await assertAdmin();
   const uniqueIds = [...new Set(ids.filter(Boolean))];
   if (!uniqueIds.length) return { deleted: 0, error: 'No recipes selected.' };
-
-  const { data, error } = await supabase
-    .from('recipes')
-    .delete()
-    .in('id', uniqueIds)
-    .select('id');
-  if (error) return { deleted: 0, error: error.message };
-
-  revalidatePath('/');
-  return { deleted: data?.length ?? 0, error: null };
+  try {
+    const deleted = await deleteRecipesByIds(uniqueIds);
+    revalidatePath('/');
+    return { deleted, error: null };
+  } catch (err) {
+    return { deleted: 0, error: (err as Error).message };
+  }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
+import { saveGoogleTokens } from '@/lib/data/meal-plans';
 import { getOAuth2Client } from '@/lib/google';
 
 export async function GET(request: NextRequest) {
@@ -11,8 +12,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/${locale}/meal-plan?error=google_auth`);
   }
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     return NextResponse.redirect(`${origin}/${locale}/login`);
   }
@@ -20,15 +20,11 @@ export async function GET(request: NextRequest) {
   const oauth2Client = getOAuth2Client();
   const { tokens } = await oauth2Client.getToken(code);
 
-  // Upsert tokens — use supabase admin via service role would be ideal,
-  // but anon key + RLS works since the user is authenticated
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('google_tokens') as any).upsert({
-    user_id: user.id,
+  // Stored server-side only (Firestore rules deny all client access).
+  await saveGoogleTokens(user.id, {
     access_token: tokens.access_token!,
     refresh_token: tokens.refresh_token ?? null,
     expiry_date: tokens.expiry_date ?? null,
-    updated_at: new Date().toISOString(),
   });
 
   return NextResponse.redirect(`${origin}/${locale}/meal-plan?connected=1`);

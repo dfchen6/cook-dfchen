@@ -1,15 +1,15 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { getCurrentUser } from '@/lib/auth';
+import { deleteRestaurant as deleteRestaurantDoc, saveRestaurant } from '@/lib/data/restaurants';
 
 // Restaurants are a private per-user journal: every action is scoped to the
-// signed-in user. RLS (supabase/restaurants_per_user.sql) enforces the same rule.
+// signed-in user's own users/{uid}/restaurants collection.
 async function requireUser() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error('Unauthorized');
-  return { supabase, user };
+  return user;
 }
 
 export type DishInput = {
@@ -52,81 +52,42 @@ export type RestaurantInput = {
 };
 
 export async function upsertRestaurant(data: RestaurantInput): Promise<{ error: string | null; id?: string }> {
-  const { supabase, user } = await requireUser();
+  const user = await requireUser();
   const { dishes, photos, id, ...fields } = data;
   // Ownership always comes from the session, never from client input (e.g. batch-import JSON).
   delete (fields as { user_id?: unknown }).user_id;
 
-  let restaurantId = id;
-
-  // Coerce float ratings/price to integers for SMALLINT columns
+  // Coerce float ratings/price to integers (they were SMALLINT columns)
   if (fields.overall_rating != null) fields.overall_rating = Math.round(fields.overall_rating);
   if (fields.price_level != null) fields.price_level = Math.round(fields.price_level);
 
-  if (restaurantId) {
-    // Update existing
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updated, error } = await (supabase.from('restaurants') as any)
-      .update({ ...fields, updated_at: new Date().toISOString() })
-      .eq('id', restaurantId)
-      .eq('user_id', user.id)
-      .select('id');
-    if (error) return { error: error.message };
-    if (!updated?.length) return { error: 'Restaurant not found' };
-  } else {
-    // Insert new
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: row, error } = await (supabase.from('restaurants') as any)
-      .insert({ ...fields, user_id: user.id })
-      .select()
-      .single();
-    if (error) return { error: error.message };
-    restaurantId = row.id;
+  try {
+    const savedId = await saveRestaurant(user.id, id, {
+      ...fields,
+      dishes: dishes?.map((d, i) => ({
+        id: d.id,
+        name: d.name,
+        name_zh: d.name_zh ?? null,
+        description: d.description ?? null,
+        image_url: d.image_url ?? null,
+        rating: d.rating != null ? Math.round(d.rating) : null,
+        recommended: d.recommended ?? true,
+        sort_order: d.sort_order ?? i,
+      })),
+      photos: photos?.map((p, i) => ({
+        id: p.id,
+        image_url: p.image_url,
+        caption: p.caption ?? null,
+        sort_order: p.sort_order ?? i,
+      })),
+    });
+    if (!savedId) return { error: 'Restaurant not found' };
+    revalidatePath('/restaurants');
+    revalidatePath(`/restaurants/${savedId}`);
+    return { error: null, id: savedId };
+  } catch (err) {
+    return { error: (err as Error).message };
   }
-
-  // Replace dishes
-  if (dishes !== undefined) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('restaurant_dishes') as any).delete().eq('restaurant_id', restaurantId);
-    if (dishes.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('restaurant_dishes') as any).insert(
-        dishes.map((d, i) => ({
-          restaurant_id: restaurantId,
-          name: d.name,
-          name_zh: d.name_zh ?? null,
-          description: d.description ?? null,
-          image_url: d.image_url ?? null,
-          rating: d.rating != null ? Math.round(d.rating) : null,
-          recommended: d.recommended ?? true,
-          sort_order: d.sort_order ?? i,
-        }))
-      );
-      if (error) return { error: error.message };
-    }
-  }
-
-  // Replace photos
-  if (photos !== undefined) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from('restaurant_photos') as any).delete().eq('restaurant_id', restaurantId);
-    if (photos.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('restaurant_photos') as any).insert(
-        photos.map((p, i) => ({
-          restaurant_id: restaurantId,
-          image_url: p.image_url,
-          caption: p.caption ?? null,
-          sort_order: p.sort_order ?? i,
-        }))
-      );
-      if (error) return { error: error.message };
-    }
-  }
-
-  revalidatePath('/restaurants');
-  revalidatePath(`/restaurants/${restaurantId}`);
-  return { error: null, id: restaurantId };
 }
 
 export async function batchImportRestaurants(
@@ -141,9 +102,12 @@ export async function batchImportRestaurants(
 }
 
 export async function deleteRestaurant(id: string): Promise<{ error: string | null }> {
-  const { supabase, user } = await requireUser();
-  const { error } = await supabase.from('restaurants').delete().eq('id', id).eq('user_id', user.id);
-  if (error) return { error: error.message };
+  const user = await requireUser();
+  try {
+    await deleteRestaurantDoc(user.id, id);
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
   revalidatePath('/restaurants');
   return { error: null };
 }

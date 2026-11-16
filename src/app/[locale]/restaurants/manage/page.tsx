@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
+import { listRestaurants } from '@/lib/data/restaurants';
 import DeleteRestaurantButton from '@/components/admin/DeleteRestaurantButton';
 import BatchImportRestaurantsForm from '@/components/admin/BatchImportRestaurantsForm';
-import type { Restaurant } from '@/lib/supabase/types';
+import type { Restaurant } from '@/lib/types';
 
 const PRICE = ['', '$', '$$', '$$$', '$$$$'];
 
@@ -11,16 +12,10 @@ type Row = Pick<Restaurant, 'id' | 'name' | 'name_zh' | 'city' | 'cuisine' | 'ov
 
 export default async function ManageRestaurantsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/restaurants/manage`)}`);
 
-  const { data: raw } = await supabase
-    .from('restaurants')
-    .select('id, name, name_zh, city, cuisine, overall_rating, price_level, visited_at, tags')
-    .eq('user_id', user.id)
-    .order('visited_at', { ascending: false });
-  const restaurants = raw as Row[] | null;
+  const restaurants: Row[] = await listRestaurants(user.id);
 
   return (
     <div>

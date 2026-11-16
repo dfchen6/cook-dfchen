@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { ADMIN_EMAIL } from '@/lib/admin';
+import { getCurrentUser, isAdminUser } from '@/lib/auth';
+import { listAllRecipes } from '@/lib/data/recipes';
 import BatchImportForm from '@/components/admin/BatchImportForm';
 import ImportPrivateRecipesButton from '@/components/admin/ImportPrivateRecipesButton';
 import RecipeAdminTable from '@/components/admin/RecipeAdminTable';
@@ -13,27 +13,14 @@ export default async function AdminPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user || user.email !== ADMIN_EMAIL) {
-    redirect(`/${locale}/login`);
+  const user = await getCurrentUser();
+  if (!isAdminUser(user)) {
+    redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/admin`)}`);
   }
 
-  const { data: recipes } = await supabase
-    .from('recipes')
-    .select('id, slug, title_zh, title_en, tags, youtube_url, is_public, created_at')
-    .order('created_at', { ascending: false })
-    .returns<Array<{
-      id: string;
-      slug: string;
-      title_zh: string;
-      title_en: string;
-      tags: string[];
-      youtube_url: string | null;
-      is_public: boolean;
-      created_at: string;
-    }>>();
+  const recipes = (await listAllRecipes()).map(({ id, slug, title_zh, title_en, tags, youtube_url, is_public, created_at }) => ({
+    id, slug, title_zh, title_en, tags, youtube_url, is_public, created_at,
+  }));
 
   return (
     <div>

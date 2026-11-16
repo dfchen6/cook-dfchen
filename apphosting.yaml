@@ -1,0 +1,43 @@
+# Firebase App Hosting config for cook-dfchen (project: cook-copilot)
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0
+  maxInstances: 4
+  concurrency: 80
+
+env:
+  # Public Firebase web config (not secrets)
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyAlabpnablBFNScjlkobQg1q8durPy5d5M
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: cook-copilot.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: cook-copilot
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: cook-copilot.firebasestorage.app
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "533070630011"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:533070630011:web:251f2d823748cddbd7a6de
+
+  - variable: OWNER_EMAIL
+    value: dfchen6@gmail.com
+    availability:
+      - RUNTIME
+  - variable: GOOGLE_CLIENT_ID
+    secret: googleClientId
+    availability:
+      - RUNTIME
+  - variable: GOOGLE_CLIENT_SECRET
+    secret: googleClientSecret
+    availability:
+      - RUNTIME
+  - variable: GOOGLE_REDIRECT_URI
+    value: https://cook.dfchen.com/auth/google/callback
+    availability:
+      - RUNTIME
+  - variable: MCP_API_KEY
+    secret: mcpApiKey
+    availability:
+      - RUNTIME

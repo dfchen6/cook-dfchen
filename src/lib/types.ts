@@ -1,44 +1,4 @@
-export type Database = {
-  public: {
-    Tables: {
-      recipes: {
-        Row: Recipe;
-        Insert: Omit<Recipe, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Recipe, 'id' | 'created_at'>>;
-      };
-      ingredients: {
-        Row: Ingredient;
-        Insert: Omit<Ingredient, 'id'>;
-        Update: Partial<Omit<Ingredient, 'id'>>;
-      };
-      meal_plans: {
-        Row: MealPlan;
-        Insert: Omit<MealPlan, 'id' | 'created_at' | 'google_event_id'>;
-        Update: Partial<Omit<MealPlan, 'id' | 'created_at'>>;
-      };
-      restaurants: {
-        Row: Restaurant;
-        Insert: Omit<Restaurant, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { user_id?: string };
-        Update: Partial<Omit<Restaurant, 'id' | 'created_at'>>;
-      };
-      restaurant_dishes: {
-        Row: RestaurantDish;
-        Insert: Omit<RestaurantDish, 'id'>;
-        Update: Partial<Omit<RestaurantDish, 'id'>>;
-      };
-      restaurant_photos: {
-        Row: RestaurantPhoto;
-        Insert: Omit<RestaurantPhoto, 'id'>;
-        Update: Partial<Omit<RestaurantPhoto, 'id'>>;
-      };
-      recipe_shares: {
-        Row: RecipeShare;
-        Insert: Omit<RecipeShare, 'id' | 'created_at'>;
-        Update: Partial<Omit<RecipeShare, 'id' | 'created_at'>>;
-      };
-    };
-  };
-};
+// Shared domain types. Firestore documents are mapped to these shapes in src/lib/data/*.
 
 export type Recipe = {
   id: string;

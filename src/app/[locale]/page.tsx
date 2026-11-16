@@ -1,7 +1,8 @@
 import { getTranslations } from 'next-intl/server';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
+import { listVisibleRecipes } from '@/lib/data/recipes';
 import RecipeFilters from '@/components/RecipeFilters';
-import type { Recipe } from '@/lib/supabase/types';
+import type { Recipe } from '@/lib/types';
 
 type RecipeCardData = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'description_zh' | 'description_en' | 'cover_image' | 'tags' | 'prep_time_mins' | 'cook_time_mins'>;
 
@@ -12,13 +13,18 @@ export default async function RecipeListPage({
 }) {
   const { locale } = await params;
   const t = await getTranslations('recipelist');
-  const supabase = await createClient();
-
-  const { data: recipes } = await supabase
-    .from('recipes')
-    .select('id, slug, title_zh, title_en, description_zh, description_en, cover_image, tags, prep_time_mins, cook_time_mins')
-    .order('created_at', { ascending: false })
-    .returns<RecipeCardData[]>();
+  const recipes: RecipeCardData[] = (await listVisibleRecipes(await getCurrentUser())).map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    title_zh: r.title_zh,
+    title_en: r.title_en,
+    description_zh: r.description_zh,
+    description_en: r.description_en,
+    cover_image: r.cover_image,
+    tags: r.tags,
+    prep_time_mins: r.prep_time_mins,
+    cook_time_mins: r.cook_time_mins,
+  }));
 
   return (
     <div>

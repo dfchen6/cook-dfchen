@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import type { RecipeImportItem, RecipeWithIngredients } from '@/lib/supabase/types';
+import type { RecipeImportItem, RecipeWithIngredients } from '@/lib/types';
 
 export const RECIPE_CSV_COLUMNS = [
   'slug',

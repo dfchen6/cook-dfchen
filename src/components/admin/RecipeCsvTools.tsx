@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { batchImportRecipes, getRecipesForCsvExport } from '@/app/[locale]/admin/actions';
 import { parseRecipeCsv, recipesToCsv } from '@/lib/recipe-csv';
-import type { RecipeImportItem } from '@/lib/supabase/types';
+import type { RecipeImportItem } from '@/lib/types';
 
 const MAX_FILE_SIZE = 750 * 1024;
 

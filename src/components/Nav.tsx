@@ -3,14 +3,13 @@ import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 import LocaleToggle from './LocaleToggle';
 import NavAuth from './NavAuth';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
 import ThemeToggle from './ThemeToggle';
 
 export default async function Nav({ locale }: { locale: string }) {
   const t = await getTranslations('nav');
   // Restaurants are a private per-user diary, so only show the link when signed in.
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   return (
     <header className="border-b border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">

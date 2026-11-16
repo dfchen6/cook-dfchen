@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// Cloud Storage rules for cook-dfchen.
+//   recipes/**                 recipe covers: public read, admin-only write
+//   restaurants/{uid}/**       private restaurant photos: owner-only read/write
+// Everything else is denied.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email == 'dfchen6@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    // Uploads must be images under 10 MB.
+    function validImage() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /recipes/{path=**} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validImage();
+      allow delete: if isAdmin();
+    }
+
+    match /restaurants/{uid}/{path=**} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid && validImage();
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

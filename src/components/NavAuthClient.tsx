@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTransition, useState, useRef, useEffect } from 'react';
-import { signOut } from '@/app/[locale]/login/actions';
+import { signOutEverywhere } from '@/lib/firebase/auth-client';
 import { useRouter } from 'next/navigation';
 
 export default function NavAuthClient({
@@ -95,7 +95,7 @@ export default function NavAuthClient({
               onClick={() =>
                 startTransition(async () => {
                   setOpen(false);
-                  await signOut();
+                  await signOutEverywhere();
                   router.refresh();
                 })
               }

@@ -1,5 +1,6 @@
 import Image from 'next/image';
-import type { RestaurantDish } from '@/lib/supabase/types';
+import { isOptimizableImageUrl } from '@/lib/storage-url';
+import type { RestaurantDish } from '@/lib/types';
 
 function Stars({ rating }: { rating: number }) {
   return <span className="text-amber-400 text-xs">{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</span>;
@@ -17,7 +18,7 @@ export default function DishGrid({ dishes }: { dishes: RestaurantDish[] }) {
         >
           {dish.image_url ? (
             <div className="relative h-40 w-full overflow-hidden">
-              <Image src={dish.image_url} alt={dish.name} fill className="object-cover" />
+              <Image src={dish.image_url} alt={dish.name} fill unoptimized={!isOptimizableImageUrl(dish.image_url)} className="object-cover" />
             </div>
           ) : (
             <div className="flex h-40 items-center justify-center bg-stone-100 text-4xl dark:bg-stone-800">🍽️</div>

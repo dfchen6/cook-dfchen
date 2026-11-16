@@ -7,7 +7,9 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'i.ytimg.com' },
-      { protocol: 'https', hostname: '*.supabase.co' },
+      { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+      // Local Firebase Storage emulator
+      { protocol: 'http', hostname: '127.0.0.1', port: '9199' },
     ],
   },
 };

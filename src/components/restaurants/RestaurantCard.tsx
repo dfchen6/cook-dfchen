@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Restaurant } from '@/lib/supabase/types';
+import { isOptimizableImageUrl } from '@/lib/storage-url';
+import type { Restaurant } from '@/lib/types';
 
 const PRICE = ['', '$', '$$', '$$$', '$$$$'];
 
@@ -25,7 +26,7 @@ export default function RestaurantCard({ restaurant: r, locale }: Props) {
     >
       {r.cover_image ? (
         <div className="relative h-44 w-full overflow-hidden">
-          <Image src={r.cover_image} alt={r.name} fill className="object-cover transition group-hover:scale-105" />
+          <Image src={r.cover_image} alt={r.name} fill unoptimized={!isOptimizableImageUrl(r.cover_image)} className="object-cover transition group-hover:scale-105" />
         </div>
       ) : (
         <div className="flex h-44 items-center justify-center bg-stone-100 text-5xl dark:bg-stone-800">🏪</div>

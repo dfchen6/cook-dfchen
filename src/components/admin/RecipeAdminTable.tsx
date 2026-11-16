@@ -5,7 +5,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { bulkDeleteRecipes } from '@/app/[locale]/admin/actions';
 import DeleteRecipeButton from '@/components/admin/DeleteRecipeButton';
-import type { Recipe } from '@/lib/supabase/types';
+import type { Recipe } from '@/lib/types';
 
 type RecipeRow = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'tags' | 'youtube_url' | 'is_public'>;
 

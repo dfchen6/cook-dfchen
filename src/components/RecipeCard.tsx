@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Recipe } from '@/lib/supabase/types';
+import { isOptimizableImageUrl } from '@/lib/storage-url';
+import type { Recipe } from '@/lib/types';
 
 type Props = {
   recipe: Pick<Recipe, 'slug' | 'title_zh' | 'title_en' | 'description_zh' | 'description_en' | 'cover_image' | 'tags' | 'prep_time_mins' | 'cook_time_mins'>;
@@ -21,6 +22,7 @@ export default function RecipeCard({ recipe, locale }: Props) {
             src={recipe.cover_image}
             alt={recipe.title_zh}
             fill
+            unoptimized={!isOptimizableImageUrl(recipe.cover_image)}
             className="object-cover transition group-hover:scale-105"
           />
         </div>

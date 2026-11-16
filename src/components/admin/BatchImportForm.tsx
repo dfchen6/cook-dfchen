@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { batchImportRecipes } from '@/app/[locale]/admin/actions';
-import type { RecipeImportItem } from '@/lib/supabase/types';
+import type { RecipeImportItem } from '@/lib/types';
 
 const SCHEMA_EXAMPLE = `[
   {

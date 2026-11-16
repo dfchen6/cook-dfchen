@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import type { RestaurantPhoto } from '@/lib/supabase/types';
+import { isOptimizableImageUrl } from '@/lib/storage-url';
+import type { RestaurantPhoto } from '@/lib/types';
 
 export default function PhotoGallery({ photos }: { photos: RestaurantPhoto[] }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -22,6 +23,7 @@ export default function PhotoGallery({ photos }: { photos: RestaurantPhoto[] }) 
               src={photo.image_url}
               alt={photo.caption ?? ''}
               fill
+              unoptimized={!isOptimizableImageUrl(photo.image_url)}
               className="object-cover transition group-hover:scale-105"
             />
             {photo.caption && (

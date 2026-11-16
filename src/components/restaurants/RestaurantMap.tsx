@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
-import type { Restaurant } from '@/lib/supabase/types';
+import type { Restaurant } from '@/lib/types';
 
 // Fix leaflet default marker icons in bundlers
 const icon = L.icon({

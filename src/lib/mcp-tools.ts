@@ -1,14 +1,17 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { adminAuth } from '@/lib/firebase/admin';
+import { addMealPlan } from '@/lib/data/meal-plans';
+import {
+  deleteRecipeBySlug,
+  getRecipeBySlugRaw,
+  listAllRecipes,
+  updateRecipeFieldsBySlug,
+  upsertRecipeBySlug,
+} from '@/lib/data/recipes';
 
-// Uses service role key — bypasses RLS for AI agent writes
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-}
+// The MCP route is authenticated with MCP_API_KEY and acts as the owner,
+// so it uses the Admin SDK directly (no per-user visibility filtering).
 
 const IngredientSchema = z.object({
   name_zh: z.string().describe('Ingredient name in Chinese e.g. 五花肉'),
@@ -25,13 +28,12 @@ export function registerTools(server: McpServer) {
     'List all recipes with titles and tags',
     {},
     async () => {
-      const supabase = getSupabase();
-      const { data, error } = await supabase
-        .from('recipes')
-        .select('slug, title_zh, title_en, tags, prep_time_mins, cook_time_mins, is_public')
-        .order('created_at', { ascending: false });
-
-      if (error) return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }] };
+      let data;
+      try {
+        data = await listAllRecipes();
+      } catch (error) {
+        return { content: [{ type: 'text' as const, text: `Error: ${(error as Error).message}` }] };
+      }
 
       const text = data.map(r =>
         `• ${r.title_zh} (${r.title_en}) — slug: ${r.slug}${r.is_public ? '' : ' 🔒 private'}${r.tags?.length ? ` [${r.tags.join(', ')}]` : ''}`
@@ -48,21 +50,14 @@ export function registerTools(server: McpServer) {
     'Get full details of a recipe including ingredients and instructions',
     { slug: z.string().describe('The recipe slug') },
     async ({ slug }) => {
-      const supabase = getSupabase();
-      const { data, error } = await supabase
-        .from('recipes')
-        .select('*, ingredients(*), recipe_shares(email)')
-        .eq('slug', slug)
-        .order('sort_order', { referencedTable: 'ingredients', ascending: true })
-        .single();
+      const data = await getRecipeBySlugRaw(slug);
+      if (!data) return { content: [{ type: 'text' as const, text: `Recipe "${slug}" not found.` }] };
 
-      if (error || !data) return { content: [{ type: 'text' as const, text: `Recipe "${slug}" not found.` }] };
-
-      const ings = (data.ingredients as Array<{ name_zh: string; name_en: string; quantity: string; unit: string }>)
+      const ings = data.ingredients
         .map(i => `  - ${i.name_zh} (${i.name_en}): ${i.quantity} ${i.unit}`)
         .join('\n');
 
-      const shares = (data.recipe_shares as Array<{ email: string }>).map(s => s.email);
+      const shares = data.shared_with;
       const visibility = data.is_public ? 'public' : `private${shares.length ? `, shared with: ${shares.join(', ')}` : ''}`;
 
       const text = `${data.title_zh} · ${data.title_en}
@@ -106,25 +101,15 @@ ${data.instructions}`.trim();
       ingredients: z.array(IngredientSchema),
     },
     async ({ ingredients, shared_with, ...fields }) => {
-      const supabase = getSupabase();
-      const { data: recipe, error } = await supabase
-        .from('recipes')
-        .insert(fields)
-        .select()
-        .single();
-
-      if (error) return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }] };
-
-      if (ingredients.length > 0) {
-        await supabase.from('ingredients').insert(
-          ingredients.map((ing, i) => ({ recipe_id: recipe.id, ...ing, sort_order: i }))
-        );
+      // Slugs were UNIQUE in Postgres — keep add_recipe from silently overwriting.
+      if (await getRecipeBySlugRaw(fields.slug)) {
+        return { content: [{ type: 'text' as const, text: `Error: a recipe with slug "${fields.slug}" already exists. Use update_recipe.` }] };
       }
-
-      if (shared_with.length > 0) {
-        await supabase.from('recipe_shares').insert(
-          shared_with.map(email => ({ recipe_id: recipe.id, email: email.trim().toLowerCase() }))
-        );
+      const recipe = { ...fields };
+      try {
+        await upsertRecipeBySlug({ ...fields, shared_with, ingredients: ingredients.map((ing, i) => ({ ...ing, sort_order: i })) });
+      } catch (error) {
+        return { content: [{ type: 'text' as const, text: `Error: ${(error as Error).message}` }] };
       }
 
       return {
@@ -165,23 +150,13 @@ ${data.instructions}`.trim();
         return { content: [{ type: 'text' as const, text: 'No fields to update.' }] };
       }
 
-      const supabase = getSupabase();
-      const { data: recipe, error } = await supabase
-        .from('recipes')
-        .update(Object.keys(updates).length ? updates : { updated_at: new Date().toISOString() })
-        .eq('slug', slug)
-        .select('id')
-        .single();
-      if (error || !recipe) return { content: [{ type: 'text' as const, text: `Error: ${error?.message ?? `Recipe "${slug}" not found.`}` }] };
-
-      if (shared_with !== undefined) {
-        await supabase.from('recipe_shares').delete().eq('recipe_id', recipe.id);
-        if (shared_with.length > 0) {
-          await supabase.from('recipe_shares').insert(
-            shared_with.map(email => ({ recipe_id: recipe.id, email: email.trim().toLowerCase() }))
-          );
-        }
+      let found: boolean;
+      try {
+        found = await updateRecipeFieldsBySlug(slug, { ...updates, ...(shared_with !== undefined ? { shared_with } : {}) });
+      } catch (error) {
+        return { content: [{ type: 'text' as const, text: `Error: ${(error as Error).message}` }] };
       }
+      if (!found) return { content: [{ type: 'text' as const, text: `Error: Recipe "${slug}" not found.` }] };
 
       return { content: [{ type: 'text' as const, text: `✓ Updated "${slug}".` }] };
     }
@@ -194,9 +169,11 @@ ${data.instructions}`.trim();
     'Delete a recipe and all its ingredients',
     { slug: z.string() },
     async ({ slug }) => {
-      const supabase = getSupabase();
-      const { error } = await supabase.from('recipes').delete().eq('slug', slug);
-      if (error) return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }] };
+      try {
+        await deleteRecipeBySlug(slug);
+      } catch (error) {
+        return { content: [{ type: 'text' as const, text: `Error: ${(error as Error).message}` }] };
+      }
       return { content: [{ type: 'text' as const, text: `✓ Deleted "${slug}".` }] };
     }
   );
@@ -213,27 +190,25 @@ ${data.instructions}`.trim();
       notes: z.string().optional(),
     },
     async ({ recipe_slug, planned_date, meal_type, notes }) => {
-      const supabase = getSupabase();
-
-      const { data: recipe } = await supabase
-        .from('recipes').select('id, title_zh, title_en').eq('slug', recipe_slug).single();
+      const recipe = await getRecipeBySlugRaw(recipe_slug);
       if (!recipe) return { content: [{ type: 'text' as const, text: `Recipe "${recipe_slug}" not found.` }] };
 
       const ownerEmail = process.env.OWNER_EMAIL!;
-      const { data: { users } } = await supabase.auth.admin.listUsers();
-      const user = users.find(u => u.email === ownerEmail);
-      if (!user) return { content: [{ type: 'text' as const, text: `Owner "${ownerEmail}" not found.` }] };
+      let uid: string;
+      try {
+        uid = (await adminAuth().getUserByEmail(ownerEmail)).uid;
+      } catch {
+        return { content: [{ type: 'text' as const, text: `Owner "${ownerEmail}" not found.` }] };
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(planned_date)) {
+        return { content: [{ type: 'text' as const, text: 'Error: planned_date must be YYYY-MM-DD.' }] };
+      }
 
-      const { error } = await supabase.from('meal_plans').insert({
-        user_id: user.id,
-        recipe_id: recipe.id,
-        planned_date,
-        meal_type,
-        notes: notes ?? null,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
-
-      if (error) return { content: [{ type: 'text' as const, text: `Error: ${error.message}` }] };
+      try {
+        await addMealPlan(uid, { recipe_id: recipe.id, planned_date, meal_type, notes: notes ?? null });
+      } catch (error) {
+        return { content: [{ type: 'text' as const, text: `Error: ${(error as Error).message}` }] };
+      }
       return {
         content: [{
           type: 'text' as const,

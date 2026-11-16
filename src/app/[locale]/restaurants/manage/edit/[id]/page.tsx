@@ -1,28 +1,21 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
+import { getRestaurant } from '@/lib/data/restaurants';
 import RestaurantEditForm from '@/components/admin/RestaurantEditForm';
-import type { RestaurantWithDetails } from '@/lib/supabase/types';
+import type { RestaurantWithDetails } from '@/lib/types';
 
 export default async function RestaurantEditPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/restaurants/manage/edit/${id}`)}`);
 
   let initial: RestaurantWithDetails | null = null;
 
   if (id !== 'new') {
-    const { data } = await supabase
-      .from('restaurants')
-      .select('*, restaurant_dishes(*), restaurant_photos(*)')
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .order('sort_order', { referencedTable: 'restaurant_dishes', ascending: true })
-      .order('sort_order', { referencedTable: 'restaurant_photos', ascending: true })
-      .single();
+    const data = await getRestaurant(user.id, id);
     if (!data) notFound();
-    initial = data as unknown as RestaurantWithDetails;
+    initial = data;
   }
 
   const title = initial ? `Edit: ${initial.name}` : 'New Restaurant';

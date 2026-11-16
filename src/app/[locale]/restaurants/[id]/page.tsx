@@ -1,10 +1,11 @@
 import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
+import { getRestaurant } from '@/lib/data/restaurants';
+import { isOptimizableImageUrl } from '@/lib/storage-url';
 import DishGrid from '@/components/restaurants/DishGrid';
 import PhotoGallery from '@/components/restaurants/PhotoGallery';
-import type { RestaurantWithDetails } from '@/lib/supabase/types';
 
 const PRICE = ['', '$', '$$', '$$$', '$$$$'];
 
@@ -14,19 +15,10 @@ function Stars({ rating }: { rating: number }) {
 
 export default async function RestaurantDetailPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/restaurants/${id}`)}`);
 
-  const { data: raw } = await supabase
-    .from('restaurants')
-    .select('*, restaurant_dishes(*), restaurant_photos(*)')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .order('sort_order', { referencedTable: 'restaurant_dishes', ascending: true })
-    .order('sort_order', { referencedTable: 'restaurant_photos', ascending: true })
-    .single();
-  const restaurant = raw as unknown as RestaurantWithDetails | null;
+  const restaurant = await getRestaurant(user.id, id);
 
   if (!restaurant) notFound();
 
@@ -38,7 +30,7 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
       {/* Cover image */}
       {restaurant.cover_image && (
         <div className="relative mb-8 h-72 w-full overflow-hidden rounded-2xl">
-          <Image src={restaurant.cover_image} alt={restaurant.name} fill className="object-cover" />
+          <Image src={restaurant.cover_image} alt={restaurant.name} fill unoptimized={!isOptimizableImageUrl(restaurant.cover_image)} className="object-cover" />
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import type { Ingredient } from '@/lib/supabase/types';
+import type { Ingredient } from '@/lib/types';
 
 export default function IngredientList({ ingredients }: { ingredients: Ingredient[] }) {
   return (

@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
+import { listRestaurants } from '@/lib/data/restaurants';
 import RestaurantCard from '@/components/restaurants/RestaurantCard';
 import RestaurantMapWrapper from '@/components/restaurants/RestaurantMapWrapper';
-import type { Restaurant } from '@/lib/supabase/types';
+import type { Restaurant } from '@/lib/types';
 
 type RestaurantRow = Pick<Restaurant, 'id' | 'name' | 'name_zh' | 'city' | 'country' | 'cuisine' | 'tags' | 'overall_rating' | 'price_level' | 'visited_at' | 'cover_image' | 'lat' | 'lng'>;
 
@@ -25,23 +26,10 @@ export default async function RestaurantsPage({
   const { locale } = await params;
   const { q, city, cuisine, tag, view } = await searchParams;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/restaurants`)}`);
 
-  let query = supabase
-    .from('restaurants')
-    .select('id, name, name_zh, city, country, cuisine, tags, overall_rating, price_level, visited_at, cover_image, lat, lng')
-    .eq('user_id', user.id)
-    .order('visited_at', { ascending: false });
-
-  if (q) query = query.or(`name.ilike.%${q}%,name_zh.ilike.%${q}%,notes.ilike.%${q}%`);
-  if (city) query = query.ilike('city', `%${city}%`);
-  if (cuisine) query = query.ilike('cuisine', `%${cuisine}%`);
-  if (tag) query = query.contains('tags', [tag]);
-
-  const { data: raw } = await query;
-  const restaurants = raw as RestaurantRow[] | null;
+  const restaurants: RestaurantRow[] = await listRestaurants(user.id, { q, city, cuisine, tag });
 
   const isMap = view === 'map';
 

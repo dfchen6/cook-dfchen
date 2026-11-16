@@ -15,7 +15,10 @@ async function handleMcp(request: Request): Promise<Response> {
   registerTools(server);
 
   const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // stateless — required for Vercel serverless
+    sessionIdGenerator: undefined, // stateless — one server per request
+    // Return plain JSON instead of an SSE stream: we close the server right after
+    // handleRequest, which previously cut the stream off before any data was sent.
+    enableJsonResponse: true,
   });
 
   await server.connect(transport);

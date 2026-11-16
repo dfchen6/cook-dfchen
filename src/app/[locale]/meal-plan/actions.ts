@@ -1,61 +1,51 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
 import { getOAuth2Client } from '@/lib/google';
+import { addMealPlan, deleteMealPlan, getGoogleTokens, getMealPlan } from '@/lib/data/meal-plans';
+import { getVisibleRecipeById } from '@/lib/data/recipes';
 import { google } from 'googleapis';
 import { revalidatePath } from 'next/cache';
+import type { MealPlan } from '@/lib/types';
+
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 export async function addToMealPlan(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: 'Not authenticated' };
 
   const recipe_id = formData.get('recipe_id') as string;
   const planned_date = formData.get('planned_date') as string;
   const meal_type = formData.get('meal_type') as string;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('meal_plans') as any).insert({
-    user_id: user.id,
-    recipe_id,
-    planned_date,
-    meal_type,
-  });
+  // These were enforced by FK / CHECK constraints in Postgres.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(planned_date ?? '')) return { error: 'Invalid date' };
+  if (!MEAL_TYPES.includes(meal_type)) return { error: 'Invalid meal type' };
+  if (!recipe_id || !(await getVisibleRecipeById(recipe_id, user))) return { error: 'Recipe not found' };
 
-  if (error) return { error: error.message };
+  try {
+    await addMealPlan(user.id, { recipe_id, planned_date, meal_type: meal_type as MealPlan['meal_type'] });
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
   revalidatePath('/meal-plan');
   return { error: null };
 }
 
 export async function removeFromMealPlan(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const { data: plan } = await supabase
-    .from('meal_plans')
-    .select('google_event_id')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .returns<{ google_event_id: string | null }[]>()
-    .single();
-
-  const { error } = await supabase
-    .from('meal_plans')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if (error) return { error: error.message };
+  const plan = await getMealPlan(user.id, id);
+  try {
+    await deleteMealPlan(user.id, id);
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
 
   // Best-effort: also remove the synced Google Calendar event
   if (plan?.google_event_id) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: tokenRow } = await (supabase.from('google_tokens') as any)
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
+    const tokenRow = await getGoogleTokens(user.id);
     if (tokenRow) {
       try {
         const oauth2Client = getOAuth2Client();

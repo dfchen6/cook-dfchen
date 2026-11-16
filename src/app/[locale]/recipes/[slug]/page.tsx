@@ -1,11 +1,12 @@
 import { notFound, redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
+import { getVisibleRecipeBySlug } from '@/lib/data/recipes';
 import IngredientList from '@/components/IngredientList';
 import AddToMealPlan from '@/components/AddToMealPlan';
 import RecipeSteps from '@/components/RecipeSteps';
 import Image from 'next/image';
-import type { RecipeWithIngredients } from '@/lib/supabase/types';
+import { isOptimizableImageUrl } from '@/lib/storage-url';
 import { parseInstructionSteps } from '@/lib/parse-steps';
 import { parseVideoUrl } from '@/lib/video';
 
@@ -16,21 +17,11 @@ export default async function RecipeDetailPage({
 }) {
   const { locale, slug } = await params;
   const t = await getTranslations('recipe');
-  const supabase = await createClient();
-
-  const [{ data: recipe }, { data: { user } }] = await Promise.all([
-    supabase
-      .from('recipes')
-      .select('*, ingredients(*)')
-      .eq('slug', slug)
-      .order('sort_order', { referencedTable: 'ingredients', ascending: true })
-      .returns<RecipeWithIngredients[]>()
-      .single(),
-    supabase.auth.getUser(),
-  ]);
+  const user = await getCurrentUser();
+  const recipe = await getVisibleRecipeBySlug(slug, user);
 
   if (!recipe) {
-    // RLS hides private recipes from anonymous visitors — a shared link should
+    // Private recipes are hidden from anonymous visitors — a shared link should
     // lead to login (and back here) rather than a dead-end 404.
     if (!user) {
       redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/recipes/${slug}`)}`);
@@ -56,7 +47,7 @@ export default async function RecipeDetailPage({
       {/* Cover image */}
       {recipe.cover_image && (
         <div className="relative mb-8 h-72 w-full overflow-hidden rounded-2xl">
-          <Image src={recipe.cover_image} alt={recipe.title_zh} fill className="object-cover" />
+          <Image src={recipe.cover_image} alt={recipe.title_zh} fill unoptimized={!isOptimizableImageUrl(recipe.cover_image)} className="object-cover" />
         </div>
       )}
 

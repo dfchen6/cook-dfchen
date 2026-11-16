@@ -1,4 +1,5 @@
-import type { RecipeImportItem } from '@/lib/supabase/types';
+import type { RecipeImportItem } from '@/lib/types';
+import { publicStorageUrl } from '@/lib/storage-url';
 
 type Ingredient = [name_zh: string, name_en: string, quantity: string, unit: string];
 
@@ -66,8 +67,7 @@ export function privateRecipeCoverSource(slug: string, title: string): string {
 }
 
 function coverImage(slug: string): string | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  return url ? `${url}/storage/v1/object/public/restaurant-images/recipes/${slug}/cover.jpg` : null;
+  return process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ? publicStorageUrl(`recipes/${slug}/cover.jpg`) : null;
 }
 
 const recipe = ({

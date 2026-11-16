@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { upsertRecipe } from '@/app/[locale]/admin/actions';
 import ImageUploadInput from '@/components/admin/ImageUploadInput';
-import type { RecipeImportItem } from '@/lib/supabase/types';
+import type { RecipeImportItem } from '@/lib/types';
 import { extractUrl } from '@/lib/video';
 
 type IngredientRow = {
