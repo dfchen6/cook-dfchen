@@ -10,8 +10,21 @@ import { firebaseConfig, useEmulators } from './config';
 let auth: Auth | undefined;
 let storage: FirebaseStorage | undefined;
 
+function resolvedConfig() {
+  // On deployed domains (cook.dfchen.com / *.hosted.app), serve /__/auth/* via
+  // the same-origin Next.js rewrite so browsers don't partition sessionStorage.
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  ) {
+    return { ...firebaseConfig, authDomain: window.location.host };
+  }
+  return firebaseConfig;
+}
+
 function app() {
-  return getApps().length ? getApp() : initializeApp(firebaseConfig);
+  return getApps().length ? getApp() : initializeApp(resolvedConfig());
 }
 
 export function clientAuth(): Auth {

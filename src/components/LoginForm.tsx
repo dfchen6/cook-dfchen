@@ -1,27 +1,54 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { friendlyAuthError, sendEmailLink, signInWithGoogle } from '@/lib/firebase/auth-client';
+import {
+  completeRedirectSignIn,
+  friendlyAuthError,
+  sendEmailLink,
+  signInWithGoogle,
+} from '@/lib/firebase/auth-client';
 
 export default function LoginForm({ locale, next }: { locale: string; next?: string | null }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [emailPending, startTransition] = useTransition();
+  const [googlePending, setGooglePending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const checkedRedirect = useRef(false);
   const destination = next ?? `/${locale}`;
+  const pending = emailPending || googlePending;
 
-  function google() {
-    setError(null);
-    startTransition(async () => {
+  useEffect(() => {
+    if (checkedRedirect.current) return;
+    checkedRedirect.current = true;
+    (async () => {
       try {
-        await signInWithGoogle();
-        router.replace(destination);
-        router.refresh();
+        if (await completeRedirectSignIn()) {
+          router.replace(destination);
+          router.refresh();
+        }
       } catch (err) {
         setError(friendlyAuthError(err) || null);
       }
-    });
+    })();
+  }, [destination, router]);
+
+  async function google() {
+    setError(null);
+    setGooglePending(true);
+    try {
+      // Called directly from the click handler (not inside startTransition) so
+      // browsers preserve the user-gesture token for window.open.
+      const outcome = await signInWithGoogle();
+      if (outcome === 'completed') {
+        router.replace(destination);
+        router.refresh();
+      }
+    } catch (err) {
+      setError(friendlyAuthError(err) || null);
+      setGooglePending(false);
+    }
   }
 
   function emailLink(formData: FormData) {

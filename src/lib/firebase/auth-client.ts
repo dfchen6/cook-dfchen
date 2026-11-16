@@ -2,10 +2,12 @@
 
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   isSignInWithEmailLink,
   sendSignInLinkToEmail,
   signInWithEmailLink,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User,
 } from 'firebase/auth';
@@ -24,9 +26,36 @@ async function createServerSession(user: User) {
   if (!res.ok) throw new Error('Could not start a session. Please try again.');
 }
 
-export async function signInWithGoogle() {
-  const { user } = await signInWithPopup(clientAuth(), new GoogleAuthProvider());
-  await createServerSession(user);
+/**
+ * Sign in with Google. Uses a same-origin popup first; if popups are blocked or
+ * unsupported (e.g. mobile / embedded webview), falls back to same-origin redirect.
+ * Returns `'completed'` when the session cookie is ready, or `'redirecting'` if navigating away.
+ */
+export async function signInWithGoogle(): Promise<'completed' | 'redirecting'> {
+  const provider = new GoogleAuthProvider();
+  try {
+    const { user } = await signInWithPopup(clientAuth(), provider);
+    await createServerSession(user);
+    return 'completed';
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? '';
+    if (
+      code === 'auth/popup-blocked' ||
+      code === 'auth/operation-not-supported-in-this-environment'
+    ) {
+      await signInWithRedirect(clientAuth(), provider);
+      return 'redirecting';
+    }
+    throw err;
+  }
+}
+
+/** Complete a Google redirect sign-in if the page just returned from one. */
+export async function completeRedirectSignIn(): Promise<boolean> {
+  const result = await getRedirectResult(clientAuth());
+  if (!result?.user) return false;
+  await createServerSession(result.user);
+  return true;
 }
 
 export async function sendEmailLink(email: string, finishUrl: string) {

@@ -1,4 +1,20 @@
 {
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "DC's Kitchen",
+        "supportEmail": "dfchen6@gmail.com",
+        "authorizedRedirectUris": [
+          "https://cook.dfchen.com/__/auth/handler",
+          "https://cook-dfchen--cook-copilot.us-central1.hosted.app/__/auth/handler",
+          "https://cook-copilot.firebaseapp.com/__/auth/handler",
+          "https://cook-copilot.web.app/__/auth/handler",
+          "http://localhost:3000/__/auth/handler"
+        ]
+      }
+    }
+  },
   "firestore": {
     "rules": "firestore.rules"
   },
