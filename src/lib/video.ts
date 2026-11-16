@@ -38,3 +38,19 @@ export function parseVideoUrl(input: string | null | undefined): VideoLink | nul
   }
   return { platform: 'other', url: raw };
 }
+
+/** Pick the highest-resolution available thumbnail for a YouTube URL, or null. */
+export async function resolveYoutubeThumbnail(input: string | null | undefined): Promise<string | null> {
+  const parsed = parseVideoUrl(input);
+  if (parsed?.platform !== 'youtube') return null;
+  for (const variant of ['maxresdefault.jpg', 'sddefault.jpg', 'hqdefault.jpg']) {
+    const url = `https://i.ytimg.com/vi/${parsed.embedId}/${variant}`;
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (res.ok) return url;
+    } catch {
+      // Fall back to next resolution or default below.
+    }
+  }
+  return null;
+}

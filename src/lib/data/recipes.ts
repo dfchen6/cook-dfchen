@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { Timestamp, type DocumentSnapshot } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase/admin';
 import { isAdminUser, verifiedEmail, type SessionUser } from '@/lib/auth';
+import { resolveYoutubeThumbnail } from '@/lib/video';
 import type { Ingredient, Recipe, RecipeImportItem, RecipeWithIngredients } from '@/lib/types';
 
 // Firestore layout: recipes/{recipeId}
@@ -125,6 +126,7 @@ export async function upsertRecipeBySlug(data: RecipeImportItem): Promise<{ id: 
   const ref = existing?.ref ?? recipesCol().doc(randomUUID());
   const now = Timestamp.now();
   const previous = existing ? ((existing.data()?.ingredients ?? []) as Ingredient[]) : [];
+  const coverImage = fields.cover_image || (await resolveYoutubeThumbnail(fields.youtube_url));
 
   await ref.set({
     slug: fields.slug,
@@ -136,7 +138,7 @@ export async function upsertRecipeBySlug(data: RecipeImportItem): Promise<{ id: 
     instructions_zh: fields.instructions_zh ?? null,
     instructions_en: fields.instructions_en ?? null,
     locale_primary: fields.locale_primary ?? 'zh',
-    cover_image: fields.cover_image ?? null,
+    cover_image: coverImage ?? null,
     youtube_url: fields.youtube_url ?? null,
     prep_time_mins: fields.prep_time_mins ?? null,
     cook_time_mins: fields.cook_time_mins ?? null,
@@ -167,6 +169,10 @@ export async function updateRecipeFieldsBySlug(
   if (!doc) return false;
   const update: Record<string, unknown> = { ...fields, updated_at: Timestamp.now() };
   if (fields.shared_with) update.shared_with = normalizeEmails(fields.shared_with);
+  if (fields.youtube_url && !fields.cover_image && !doc.data()?.cover_image) {
+    const thumb = await resolveYoutubeThumbnail(fields.youtube_url);
+    if (thumb) update.cover_image = thumb;
+  }
   await doc.ref.update(update);
   return true;
 }
