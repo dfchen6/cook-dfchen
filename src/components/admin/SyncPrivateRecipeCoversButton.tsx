@@ -36,7 +36,7 @@ export default function SyncPrivateRecipeCoversButton() {
         disabled={pending}
         className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-800"
       >
-        {pending ? 'Uploading covers…' : 'Upload AI covers to Supabase'}
+        {pending ? 'Uploading covers…' : 'Upload AI covers to Firebase Storage'}
       </button>
       {status && <p className="text-sm text-stone-600 dark:text-stone-400">{status}</p>}
     </div>

@@ -18,7 +18,7 @@ export async function addToMealPlan(formData: FormData) {
   const planned_date = formData.get('planned_date') as string;
   const meal_type = formData.get('meal_type') as string;
 
-  // These were enforced by FK / CHECK constraints in Postgres.
+  // Validate date, meal type, and recipe visibility before writing to Firestore.
   if (!/^\d{4}-\d{2}-\d{2}$/.test(planned_date ?? '')) return { error: 'Invalid date' };
   if (!MEAL_TYPES.includes(meal_type)) return { error: 'Invalid meal type' };
   if (!recipe_id || !(await getVisibleRecipeById(recipe_id, user))) return { error: 'Recipe not found' };

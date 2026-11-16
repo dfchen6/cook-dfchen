@@ -20,7 +20,7 @@ const headingCls = 'mb-3 text-sm font-semibold uppercase tracking-wider text-sto
 
 export default function RestaurantEditForm({ locale, userId, initial }: Props) {
   const router = useRouter();
-  // Uploads live under restaurants/<uid>/... so storage RLS can scope them per user.
+  // Uploads live under restaurants/<uid>/... so Firebase Storage rules can scope them per user.
   const [folderId] = useState(() => initial?.id ?? crypto.randomUUID());
   const uploadBase = `restaurants/${userId}/${folderId}`;
   const [pending, startTransition] = useTransition();

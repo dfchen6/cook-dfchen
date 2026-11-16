@@ -6,5 +6,5 @@ import { routing } from './i18n/routing';
 export default createIntlMiddleware(routing);
 
 export const config = {
-  matcher: ['/((?!api|auth|_next|_vercel|.*\\..*).*)'],
+  matcher: ['/((?!api|auth|_next|.*\\..*).*)'],
 };

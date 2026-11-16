@@ -46,7 +46,7 @@ export type RestaurantFilters = { q?: string; city?: string; cuisine?: string; t
 const includesCi = (value: string | null | undefined, needle: string) =>
   (value ?? '').toLowerCase().includes(needle.toLowerCase());
 
-/** The user's restaurants, newest visit first, with the same filters the old SQL query supported. */
+/** The user's restaurants, newest visit first, filtered by search/city/cuisine/tag. */
 export async function listRestaurants(uid: string, filters: RestaurantFilters = {}): Promise<RestaurantWithDetails[]> {
   const snap = await col(uid).get();
   const { q, city, cuisine, tag } = filters;

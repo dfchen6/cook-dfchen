@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DC's Kitchen (`cook-dfchen`)
 
-## Getting Started
+Bilingual (Chinese / English) personal recipe collection, private per-user restaurant diary, meal planner with Google Calendar sync, and MCP server — deployed on **Firebase App Hosting** at [cook.dfchen.com](https://cook.dfchen.com).
 
-First, run the development server:
+## Stack
+
+- **Framework**: Next.js 16 (App Router) + `next-intl` (`zh` default, `en`) + Tailwind CSS v4
+- **Auth**: Firebase Authentication (Google Sign-In + passwordless Email Link) backed by an `httpOnly` `__session` cookie verified server-side
+- **Database**: Cloud Firestore (accessed exclusively from the server via `firebase-admin`; [firestore.rules](firestore.rules) denies direct client access)
+- **Storage**: Cloud Storage for Firebase (`recipes/**` public read / admin write; `restaurants/{uid}/**` owner-only via [storage.rules](storage.rules))
+- **Hosting**: Firebase App Hosting (`cook-dfchen` backend in `us-central1`, project `cook-copilot`, configured in [apphosting.yaml](apphosting.yaml))
+- **MCP**: Streamable HTTP MCP server at `/api/mcp` (`Authorization: Bearer <MCP_API_KEY>`)
+
+## Local Development
+
+1. Authenticate Application Default Credentials with access to the `cook-copilot` Firebase project:
+   ```bash
+   gcloud auth application-default login
+   ```
+2. Configure `.env.local`:
+   ```bash
+   NEXT_PUBLIC_FIREBASE_API_KEY=...
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=cook-copilot.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=cook-copilot
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=cook-copilot.firebasestorage.app
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=533070630011
+   NEXT_PUBLIC_FIREBASE_APP_ID=1:533070630011:web:251f2d823748cddbd7a6de
+   OWNER_EMAIL=dfchen6@gmail.com
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
+   MCP_API_KEY=...
+   ```
+3. Run the dev server:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000).
+
+### Running with Firebase Emulators (optional)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx -y firebase-tools@latest emulators:start --only auth,firestore,storage --project cook-copilot
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then start Next.js with:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8085 \
+FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
+FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 \
+NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true \
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy to Firebase
 
-## Learn More
+Deploy Firestore rules, Storage rules, and the Next.js app to Firebase App Hosting:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx -y firebase-tools@latest deploy --only firestore:rules,storage,apphosting --project cook-copilot
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Runtime secrets (`googleClientId`, `googleClientSecret`, `mcpApiKey`) are stored in Cloud Secret Manager and referenced in [apphosting.yaml](apphosting.yaml):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx -y firebase-tools@latest apphosting:secrets:set <secretName> --project cook-copilot
+npx -y firebase-tools@latest apphosting:secrets:grantaccess <secretName> --backend cook-dfchen --project cook-copilot
+```

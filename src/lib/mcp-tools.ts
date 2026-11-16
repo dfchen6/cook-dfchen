@@ -101,7 +101,7 @@ ${data.instructions}`.trim();
       ingredients: z.array(IngredientSchema),
     },
     async ({ ingredients, shared_with, ...fields }) => {
-      // Slugs were UNIQUE in Postgres — keep add_recipe from silently overwriting.
+      // Enforce unique slugs so add_recipe doesn't silently overwrite an existing recipe.
       if (await getRecipeBySlugRaw(fields.slug)) {
         return { content: [{ type: 'text' as const, text: `Error: a recipe with slug "${fields.slug}" already exists. Use update_recipe.` }] };
       }

@@ -9,7 +9,7 @@ import type { Ingredient, Recipe, RecipeImportItem, RecipeWithIngredients } from
 // Firestore layout: recipes/{recipeId}
 //   ...Recipe fields, ingredients: Ingredient[], shared_with: string[] (lowercased emails),
 //   created_at / updated_at: Timestamp
-// Authorization (formerly Supabase RLS) is enforced here; Firestore rules deny all client access.
+// Authorization is enforced here on the server; Firestore rules deny all client access.
 
 const recipesCol = () => adminDb().collection('recipes');
 
