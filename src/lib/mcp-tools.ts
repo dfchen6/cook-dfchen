@@ -59,11 +59,12 @@ export function registerTools(server: McpServer) {
 
       const shares = data.shared_with;
       const visibility = data.is_public ? 'public' : `private${shares.length ? `, shared with: ${shares.join(', ')}` : ''}`;
+      const videosLine = data.video_urls.length ? `\nVideos: ${data.video_urls.join(' | ')}` : '';
 
       const text = `${data.title_zh} · ${data.title_en}
 Slug: ${data.slug} | Servings: ${data.servings ?? '—'} | Prep: ${data.prep_time_mins ?? '—'}min | Cook: ${data.cook_time_mins ?? '—'}min
 Tags: ${data.tags?.join(', ') || 'none'}
-Visibility: ${visibility}
+Visibility: ${visibility}${videosLine}
 
 Ingredients:
 ${ings}
@@ -91,7 +92,8 @@ ${data.instructions}`.trim();
       description_en: z.string().optional(),
       locale_primary: z.enum(['zh', 'en']).default('zh'),
       cover_image: z.string().optional().describe('Cover image URL'),
-      youtube_url: z.string().optional().describe('Video URL — YouTube (embedded) or Xiaohongshu/小红书 (shown as a link)'),
+      youtube_url: z.string().optional().describe('Primary video URL — YouTube (embedded) or Xiaohongshu/小红书 (shown as a link)'),
+      video_urls: z.array(z.string()).optional().describe('Multiple video URLs (YouTube and/or Xiaohongshu)'),
       prep_time_mins: z.number().optional(),
       cook_time_mins: z.number().optional(),
       servings: z.number().optional(),
@@ -136,7 +138,8 @@ ${data.instructions}`.trim();
       description_zh: z.string().optional(),
       description_en: z.string().optional(),
       cover_image: z.string().optional().describe('Cover image URL'),
-      youtube_url: z.string().optional().describe('Video URL — YouTube (embedded) or Xiaohongshu/小红书 (shown as a link)'),
+      youtube_url: z.string().optional().describe('Primary video URL — YouTube (embedded) or Xiaohongshu/小红书 (shown as a link)'),
+      video_urls: z.array(z.string()).optional().describe('Multiple video URLs (YouTube and/or Xiaohongshu)'),
       prep_time_mins: z.number().optional(),
       cook_time_mins: z.number().optional(),
       servings: z.number().optional(),

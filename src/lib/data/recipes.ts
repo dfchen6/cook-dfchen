@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { Timestamp, type DocumentSnapshot } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase/admin';
 import { isAdminUser, verifiedEmail, type SessionUser } from '@/lib/auth';
-import { resolveYoutubeThumbnail } from '@/lib/video';
+import { normalizeVideoUrls, resolveYoutubeThumbnail } from '@/lib/video';
 import type { Ingredient, Recipe, RecipeImportItem, RecipeWithIngredients } from '@/lib/types';
 
 // Firestore layout: recipes/{recipeId}
@@ -26,6 +26,7 @@ function toRecipe(doc: DocumentSnapshot): RecipeWithIngredients & { shared_with:
     .map((ing, i) => ({ ...ing, recipe_id: doc.id, sort_order: ing.sort_order ?? i }))
     .sort((a, b) => a.sort_order - b.sort_order);
   const shared_with: string[] = d.shared_with ?? [];
+  const video_urls = normalizeVideoUrls(d.video_urls, d.youtube_url);
   return {
     id: doc.id,
     slug: d.slug,
@@ -38,7 +39,8 @@ function toRecipe(doc: DocumentSnapshot): RecipeWithIngredients & { shared_with:
     instructions_en: d.instructions_en ?? null,
     locale_primary: d.locale_primary ?? 'zh',
     cover_image: d.cover_image ?? null,
-    youtube_url: d.youtube_url ?? null,
+    youtube_url: video_urls[0] ?? null,
+    video_urls,
     prep_time_mins: d.prep_time_mins ?? null,
     cook_time_mins: d.cook_time_mins ?? null,
     servings: d.servings ?? null,
@@ -126,7 +128,8 @@ export async function upsertRecipeBySlug(data: RecipeImportItem): Promise<{ id: 
   const ref = existing?.ref ?? recipesCol().doc(randomUUID());
   const now = Timestamp.now();
   const previous = existing ? ((existing.data()?.ingredients ?? []) as Ingredient[]) : [];
-  const coverImage = fields.cover_image || (await resolveYoutubeThumbnail(fields.youtube_url));
+  const videoUrls = normalizeVideoUrls(fields.video_urls, fields.youtube_url);
+  const coverImage = fields.cover_image || (await resolveYoutubeThumbnail(videoUrls));
 
   await ref.set({
     slug: fields.slug,
@@ -139,7 +142,8 @@ export async function upsertRecipeBySlug(data: RecipeImportItem): Promise<{ id: 
     instructions_en: fields.instructions_en ?? null,
     locale_primary: fields.locale_primary ?? 'zh',
     cover_image: coverImage ?? null,
-    youtube_url: fields.youtube_url ?? null,
+    youtube_url: videoUrls[0] ?? null,
+    video_urls: videoUrls,
     prep_time_mins: fields.prep_time_mins ?? null,
     cook_time_mins: fields.cook_time_mins ?? null,
     servings: fields.servings ?? null,
@@ -169,9 +173,14 @@ export async function updateRecipeFieldsBySlug(
   if (!doc) return false;
   const update: Record<string, unknown> = { ...fields, updated_at: Timestamp.now() };
   if (fields.shared_with) update.shared_with = normalizeEmails(fields.shared_with);
-  if (fields.youtube_url && !fields.cover_image && !doc.data()?.cover_image) {
-    const thumb = await resolveYoutubeThumbnail(fields.youtube_url);
-    if (thumb) update.cover_image = thumb;
+  if (fields.video_urls !== undefined || fields.youtube_url !== undefined) {
+    const videoUrls = normalizeVideoUrls(fields.video_urls, fields.youtube_url);
+    update.video_urls = videoUrls;
+    update.youtube_url = videoUrls[0] ?? null;
+    if (!fields.cover_image && !doc.data()?.cover_image) {
+      const thumb = await resolveYoutubeThumbnail(videoUrls);
+      if (thumb) update.cover_image = thumb;
+    }
   }
   await doc.ref.update(update);
   return true;

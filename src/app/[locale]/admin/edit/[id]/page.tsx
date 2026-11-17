@@ -51,6 +51,7 @@ export default async function RecipeEditPage({
                 instructions_zh: initial.instructions_zh,
                 instructions_en: initial.instructions_en,
                 youtube_url: initial.youtube_url,
+                video_urls: initial.video_urls,
                 cover_image: initial.cover_image,
                 prep_time_mins: initial.prep_time_mins,
                 cook_time_mins: initial.cook_time_mins,

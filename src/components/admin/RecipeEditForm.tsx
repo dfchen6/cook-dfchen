@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { upsertRecipe } from '@/app/[locale]/admin/actions';
 import ImageUploadInput from '@/components/admin/ImageUploadInput';
 import type { RecipeImportItem } from '@/lib/types';
-import { extractUrl } from '@/lib/video';
+import { extractUrl, normalizeVideoUrls } from '@/lib/video';
 
 type IngredientRow = {
   name_zh: string;
@@ -35,7 +35,10 @@ export default function RecipeEditForm({ locale, initial }: Props) {
   const [descEn, setDescEn] = useState(initial?.description_en ?? '');
   const [instZh, setInstZh] = useState(initial?.instructions_zh ?? '');
   const [instEn, setInstEn] = useState(initial?.instructions_en ?? '');
-  const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtube_url ?? '');
+  const [videoUrls, setVideoUrls] = useState<string[]>(() => {
+    const urls = normalizeVideoUrls(initial?.video_urls, initial?.youtube_url);
+    return urls.length ? urls : [''];
+  });
   const [coverImage, setCoverImage] = useState(initial?.cover_image ?? '');
   const [prepTime, setPrepTime] = useState(String(initial?.prep_time_mins ?? ''));
   const [cookTime, setCookTime] = useState(String(initial?.cook_time_mins ?? ''));
@@ -67,6 +70,7 @@ export default function RecipeEditForm({ locale, initial }: Props) {
     setError(null);
     setSuccess(null);
 
+    const cleanVideos = normalizeVideoUrls(videoUrls);
     const data: RecipeImportItem = {
       slug,
       title_zh: titleZh,
@@ -75,7 +79,8 @@ export default function RecipeEditForm({ locale, initial }: Props) {
       description_en: descEn || null,
       instructions_zh: instZh || null,
       instructions_en: instEn || null,
-      youtube_url: youtubeUrl || null,
+      youtube_url: cleanVideos[0] ?? null,
+      video_urls: cleanVideos,
       cover_image: coverImage || null,
       prep_time_mins: prepTime ? Number(prepTime) : null,
       cook_time_mins: cookTime ? Number(cookTime) : null,
@@ -166,13 +171,43 @@ export default function RecipeEditForm({ locale, initial }: Props) {
             path={`recipes/${initial?.slug ?? crypto.randomUUID()}/cover`}
           />
           <div>
-            <label className={labelCls}>Video URL (YouTube / 小红书)</label>
-            <input
-              value={youtubeUrl}
-              onChange={(e) => setYoutubeUrl(extractUrl(e.target.value) ?? e.target.value)}
-              className={inputCls}
-              placeholder="https://youtube.com/watch?v=... 或 http://xhslink.com/..."
-            />
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-xs font-medium text-stone-500 dark:text-stone-400">
+                Video URLs (YouTube / 小红书)
+              </label>
+              <button
+                type="button"
+                onClick={() => setVideoUrls((prev) => [...prev, ''])}
+                className="text-xs font-medium text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+              >
+                + Add video
+              </button>
+            </div>
+            <div className="space-y-2">
+              {videoUrls.map((url, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    value={url}
+                    onChange={(e) => {
+                      const next = extractUrl(e.target.value) ?? e.target.value;
+                      setVideoUrls((prev) => prev.map((v, i) => (i === idx ? next : v)));
+                    }}
+                    className={inputCls}
+                    placeholder="https://youtube.com/watch?v=... 或 http://xhslink.com/..."
+                  />
+                  {videoUrls.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setVideoUrls((prev) => prev.filter((_, i) => i !== idx))}
+                      className="shrink-0 rounded-lg border border-stone-200 px-2.5 py-2 text-xs text-stone-400 hover:text-red-500 dark:border-stone-700"
+                      title="Remove video"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

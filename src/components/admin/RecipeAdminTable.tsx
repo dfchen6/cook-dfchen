@@ -7,7 +7,7 @@ import { bulkDeleteRecipes } from '@/app/[locale]/admin/actions';
 import DeleteRecipeButton from '@/components/admin/DeleteRecipeButton';
 import type { Recipe } from '@/lib/types';
 
-type RecipeRow = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'tags' | 'youtube_url' | 'is_public'>;
+type RecipeRow = Pick<Recipe, 'id' | 'slug' | 'title_zh' | 'title_en' | 'tags' | 'youtube_url' | 'video_urls' | 'is_public'>;
 
 export default function RecipeAdminTable({ recipes, locale }: { recipes: RecipeRow[]; locale: string }) {
   const router = useRouter();
@@ -115,7 +115,15 @@ export default function RecipeAdminTable({ recipes, locale }: { recipes: RecipeR
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  {recipe.youtube_url ? <span className="text-red-500" title={recipe.youtube_url}>▶</span> : <span className="text-stone-300 dark:text-stone-600">—</span>}
+                  {recipe.video_urls?.length ? (
+                    <span className="text-xs font-medium text-red-500" title={recipe.video_urls.join('\n')}>
+                      ▶{recipe.video_urls.length > 1 ? ` ×${recipe.video_urls.length}` : ''}
+                    </span>
+                  ) : recipe.youtube_url ? (
+                    <span className="text-red-500" title={recipe.youtube_url}>▶</span>
+                  ) : (
+                    <span className="text-stone-300 dark:text-stone-600">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {recipe.is_public ? <span className="text-xs text-stone-400">Public</span> : <span className="text-xs font-medium text-amber-600 dark:text-amber-400" title="Shared only">🔒 Shared</span>}

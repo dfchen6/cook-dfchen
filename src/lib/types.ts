@@ -13,6 +13,7 @@ export type Recipe = {
   locale_primary: 'zh' | 'en';
   cover_image: string | null;
   youtube_url: string | null;
+  video_urls: string[];
   prep_time_mins: number | null;
   cook_time_mins: number | null;
   servings: number | null;
@@ -41,6 +42,7 @@ export type RecipeImportItem = {
   locale_primary?: 'zh' | 'en';
   cover_image?: string | null;
   youtube_url?: string | null;
+  video_urls?: string[];
   prep_time_mins?: number | null;
   cook_time_mins?: number | null;
   servings?: number | null;

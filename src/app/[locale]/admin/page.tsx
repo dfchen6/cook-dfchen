@@ -18,8 +18,8 @@ export default async function AdminPage({
     redirect(`/${locale}/login?next=${encodeURIComponent(`/${locale}/admin`)}`);
   }
 
-  const recipes = (await listAllRecipes()).map(({ id, slug, title_zh, title_en, tags, youtube_url, is_public, created_at }) => ({
-    id, slug, title_zh, title_en, tags, youtube_url, is_public, created_at,
+  const recipes = (await listAllRecipes()).map(({ id, slug, title_zh, title_en, tags, youtube_url, video_urls, is_public, created_at }) => ({
+    id, slug, title_zh, title_en, tags, youtube_url, video_urls, is_public, created_at,
   }));
 
   return (

@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import type { RecipeImportItem, RecipeWithIngredients } from '@/lib/types';
+import { extractAllUrls } from '@/lib/video';
 
 export const RECIPE_CSV_COLUMNS = [
   'slug',
@@ -119,7 +120,8 @@ function rowToRecipe(row: Record<string, string>, rowNumber: number): RecipeImpo
     instructions_en: nullable(row.instructions_en ?? ''),
     locale_primary: locale,
     cover_image: nullable(row.cover_image ?? ''),
-    youtube_url: nullable(row.youtube_url ?? ''),
+    youtube_url: extractAllUrls(row.youtube_url)[0] ?? null,
+    video_urls: extractAllUrls(row.youtube_url),
     prep_time_mins: numberOrNull(row.prep_time_mins ?? '', 'prep_time_mins', rowNumber),
     cook_time_mins: numberOrNull(row.cook_time_mins ?? '', 'cook_time_mins', rowNumber),
     servings: numberOrNull(row.servings ?? '', 'servings', rowNumber),
@@ -174,7 +176,7 @@ export function recipesToCsv(recipes: RecipeWithIngredients[]): string {
     instructions_en: recipe.instructions_en ?? '',
     locale_primary: recipe.locale_primary,
     cover_image: recipe.cover_image ?? '',
-    youtube_url: recipe.youtube_url ?? '',
+    youtube_url: (recipe.video_urls?.length ? recipe.video_urls.join('\n') : recipe.youtube_url) ?? '',
     prep_time_mins: recipe.prep_time_mins?.toString() ?? '',
     cook_time_mins: recipe.cook_time_mins?.toString() ?? '',
     servings: recipe.servings?.toString() ?? '',
