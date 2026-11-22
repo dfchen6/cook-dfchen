@@ -76,31 +76,34 @@ struct RecipeDetailView: View {
                             .font(.body)
                             .foregroundStyle(.secondary)
                             .lineSpacing(4)
+                            .padding(.horizontal, 16)
                     }
 
-                    HStack(spacing: 10) {
-                        if let prep = recipe.prep_time_mins {
-                            metaPill(
-                                icon: "scissors",
-                                label: lang == .zh ? "备菜 \(prep) 分钟" : "Prep \(prep)m"
-                            )
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            if let prep = recipe.prep_time_mins {
+                                metaPill(
+                                    icon: "scissors",
+                                    label: lang == .zh ? "备菜 \(prep) 分钟" : "Prep \(prep)m"
+                                )
+                            }
+                            if let cook = recipe.cook_time_mins {
+                                metaPill(
+                                    icon: "flame.fill",
+                                    label: lang == .zh ? "烹饪 \(cook) 分钟" : "Cook \(cook)m"
+                                )
+                            }
+                            if let servings = recipe.servings {
+                                let scaledServings = Int(max(1, (Double(servings) * multiplier).rounded()))
+                                metaPill(
+                                    icon: "person.2.fill",
+                                    label: lang == .zh ? "\(scaledServings) 人份" : "\(scaledServings) servings"
+                                )
+                            }
                         }
-                        if let cook = recipe.cook_time_mins {
-                            metaPill(
-                                icon: "flame.fill",
-                                label: lang == .zh ? "烹饪 \(cook) 分钟" : "Cook \(cook)m"
-                            )
-                        }
-                        if let servings = recipe.servings {
-                            let scaledServings = Int(max(1, (Double(servings) * multiplier).rounded()))
-                            metaPill(
-                                icon: "person.2.fill",
-                                label: lang == .zh ? "\(scaledServings) 人份" : "\(scaledServings) servings"
-                            )
-                        }
+                        .padding(.horizontal, 16)
                     }
                 }
-                .padding(.horizontal, 18)
 
                 // Multi-Video Tutorials (YouTube & Xiaohongshu)
                 if !videos.isEmpty {
@@ -156,7 +159,7 @@ struct RecipeDetailView: View {
         return VStack(alignment: .leading, spacing: 10) {
             Text(lang == .zh ? "视频参考教程" : "Video Tutorials")
                 .font(.headline)
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 16)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -179,7 +182,7 @@ struct RecipeDetailView: View {
                                 .foregroundStyle(.primary)
                             }
                             .padding(.horizontal, 14)
-                            .padding(.vertical, 11)
+                            .frame(minHeight: 44)
                             .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -217,7 +220,7 @@ struct RecipeDetailView: View {
                                     .foregroundStyle(.secondary)
                             }
                             .padding(.horizontal, 14)
-                            .padding(.vertical, 11)
+                            .frame(minHeight: 44)
                             .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -227,7 +230,7 @@ struct RecipeDetailView: View {
                         .buttonStyle(SpringPressButtonStyle())
                     }
                 }
-                .padding(.horizontal, 18)
+                .padding(.horizontal, 16)
             }
         }
     }
@@ -266,7 +269,7 @@ struct RecipeDetailView: View {
             }
 
             // Portion Multiplier Selector
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Text(lang == .zh ? "分量缩放" : "Scale")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -281,10 +284,11 @@ struct RecipeDetailView: View {
                     } label: {
                         Text(m == floor(m) ? "\(Int(m))×" : String(format: "%.1f×", m))
                             .font(.caption.weight(.bold))
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 36)
                             .background(active ? Color.accentColor : Color.primary.opacity(0.06), in: Capsule())
                             .foregroundStyle(active ? .white : .primary)
+                            .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
                 }
@@ -335,16 +339,16 @@ struct RecipeDetailView: View {
             }
             .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
     }
 
     private func stepsSection(steps: [RecipeStep], lang: AppLanguage) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
+            HStack(alignment: .firstTextBaseline) {
                 Text(lang == .zh ? "烹饪步骤" : "Steps")
                     .font(.title3.weight(.bold))
                 Spacer()
-                Text(lang == .zh ? "点任意步骤可直接从该步开炒" : "Tap any step to start there")
+                Text(lang == .zh ? "轻点步骤可直接从该步开炒" : "Tap any step to start")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -394,7 +398,7 @@ struct RecipeDetailView: View {
                 .buttonStyle(SpringPressButtonStyle(scale: 0.985))
             }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
     }
 
     private func startCookingBar(stepsCount: Int, lang: AppLanguage) -> some View {
@@ -416,6 +420,8 @@ struct RecipeDetailView: View {
                         : (lang == .zh ? "开始做菜 · 全屏常亮模式" : "Start Cooking · Keep Screen Awake")
                 )
                 .font(.headline.weight(.bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
@@ -434,7 +440,7 @@ struct RecipeDetailView: View {
             .shadow(color: Color.orange.opacity(0.35), radius: 14, y: 6)
         }
         .buttonStyle(SpringPressButtonStyle())
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 8)
         .background(

@@ -30,11 +30,11 @@ struct CookingModeView: View {
                 // Top HUD Bar
                 topHUD(stepsCount: safeTotal, currentIdx: currentIdx, lang: lang)
 
-                //Segmented Progress Bar (tappable!)
+                // Segmented Progress Bar (tappable!)
                 segmentedProgressBar(total: safeTotal, current: currentIdx)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
 
                 // Active Countdown Timers Strip
                 if !cookingSession.timers.isEmpty {
@@ -106,25 +106,8 @@ struct CookingModeView: View {
     // MARK: - Top HUD & Progress
 
     private func topHUD(stepsCount: Int, currentIdx: Int, lang: AppLanguage) -> some View {
-        HStack(spacing: 10) {
-            // Minimize button (keeps active session & timers floating!)
-            Button {
-                cookingSession.minimizeCooking()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .bold))
-                    Text(lang == .zh ? "收起" : "Minimize")
-                        .font(.footnote.weight(.semibold))
-                }
-                .foregroundStyle(.white.opacity(0.88))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.white.opacity(0.10), in: Capsule())
-            }
-
-            Spacer()
-
+        ZStack {
+            // Centered title & keep-awake status
             VStack(spacing: 2) {
                 Text(recipe.primaryTitle(for: lang))
                     .font(.subheadline.weight(.bold))
@@ -140,36 +123,61 @@ struct CookingModeView: View {
                         .foregroundStyle(.white.opacity(0.65))
                 }
             }
+            .padding(.horizontal, 98)
 
-            Spacer()
-
-            // Font size toggle
-            Button {
-                withAnimation(.snappy(duration: 0.2)) {
-                    cookingSession.useExtraLargeFont.toggle()
+            HStack(spacing: 8) {
+                // Minimize button (keeps active session & timers floating!)
+                Button {
+                    cookingSession.minimizeCooking()
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 13, weight: .bold))
+                        Text(lang == .zh ? "收起" : "Minimize")
+                            .font(.footnote.weight(.semibold))
+                    }
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 12)
+                    .frame(height: 38)
+                    .background(.white.opacity(0.11), in: Capsule())
+                    .frame(minHeight: 44)
+                    .contentShape(Capsule())
                 }
-                Haptics.selection()
-            } label: {
-                Text(cookingSession.useExtraLargeFont ? "A+" : "A")
-                    .font(.footnote.weight(.bold))
-                    .foregroundStyle(cookingSession.useExtraLargeFont ? .orange : .white.opacity(0.85))
-                    .frame(width: 36, height: 34)
-                    .background(.white.opacity(0.10), in: Circle())
-            }
 
-            // End session button
-            Button {
-                cookingSession.finishCooking()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.75))
-                    .frame(width: 34, height: 34)
-                    .background(.white.opacity(0.10), in: Circle())
+                Spacer()
+
+                // Font size toggle
+                Button {
+                    withAnimation(.snappy(duration: 0.2)) {
+                        cookingSession.useExtraLargeFont.toggle()
+                    }
+                    Haptics.selection()
+                } label: {
+                    Text(cookingSession.useExtraLargeFont ? "A+" : "A")
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(cookingSession.useExtraLargeFont ? .orange : .white.opacity(0.88))
+                        .frame(width: 38, height: 38)
+                        .background(.white.opacity(0.11), in: Circle())
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
+                }
+
+                // End session button
+                Button {
+                    cookingSession.finishCooking()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 38, height: 38)
+                        .background(.white.opacity(0.11), in: Circle())
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
+                }
             }
         }
         .padding(.horizontal, 16)
-        .padding(.top, 8)
+        .padding(.top, 6)
     }
 
     private func segmentedProgressBar(total: Int, current: Int) -> some View {
@@ -265,7 +273,7 @@ struct CookingModeView: View {
                     )
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
         }
     }
 
@@ -279,7 +287,11 @@ struct CookingModeView: View {
         lang: AppLanguage
     ) -> some View {
         let detectedTimers = StepTimerDetector.detect(in: step.body)
-        let bodyFontSize: CGFloat = cookingSession.useExtraLargeFont ? 31 : 25
+        let isCompactScreen = UIScreen.main.bounds.height < 720
+        let bodyFontSize: CGFloat = cookingSession.useExtraLargeFont
+            ? (isCompactScreen ? 26 : 31)
+            : (isCompactScreen ? 22 : 25)
+        let cardPadding: CGFloat = isCompactScreen ? 18 : 24
 
         return VStack(spacing: 12) {
             ScrollView(showsIndicators: false) {
@@ -371,7 +383,7 @@ struct CookingModeView: View {
                     }
                     .padding(.top, 6)
                 }
-                .padding(24)
+                .padding(cardPadding)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
@@ -410,14 +422,14 @@ struct CookingModeView: View {
                             .foregroundStyle(.white.opacity(0.4))
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 11)
+                    .frame(minHeight: 44)
                     .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Giant One-Handed Bottom Control Dock
@@ -509,7 +521,7 @@ struct CookingModeView: View {
             }
             .buttonStyle(SpringPressButtonStyle())
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 12)
     }

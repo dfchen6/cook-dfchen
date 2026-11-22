@@ -87,10 +87,8 @@ struct RecipeHomeView: View {
                     Haptics.selection()
                 } label: {
                     Text(lang == .zh ? "EN" : "中")
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(.quaternary, in: Capsule())
+                        .font(.subheadline.weight(.bold))
+                        .frame(minWidth: 32, minHeight: 32)
                 }
             }
 
@@ -99,16 +97,14 @@ struct RecipeHomeView: View {
                     showingAccountSheet = true
                     Haptics.selection()
                 } label: {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(authManager.isSignedIn ? Color.green : Color.secondary.opacity(0.5))
-                            .frame(width: 7, height: 7)
-                        Image(systemName: authManager.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
-                            .font(.system(size: 18, weight: .semibold))
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(.quaternary.opacity(0.7), in: Capsule())
+                    Image(systemName: authManager.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
+                        .font(.system(size: 20, weight: .semibold))
+                        .overlay(alignment: .bottomTrailing) {
+                            Circle()
+                                .fill(authManager.isSignedIn ? Color.green : Color.orange)
+                                .frame(width: 8, height: 8)
+                                .overlay(Circle().stroke(Color(uiColor: .systemBackground), lineWidth: 1.5))
+                        }
                 }
             }
         }
@@ -140,12 +136,13 @@ struct RecipeHomeView: View {
                         .foregroundStyle(.primary)
                     Text(
                         lang == .zh
-                            ? "当前仅显示 \(recipeStore.recipes.count) 道公开菜 · 登录后离线缓存全部菜谱"
+                            ? "当前显示 \(recipeStore.recipes.count) 道公开菜 · 登录后离线同步全部菜谱"
                             : "Showing \(recipeStore.recipes.count) public recipes · Sign in for full library"
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
                 }
 
                 Spacer()
@@ -311,12 +308,16 @@ private struct RecipeCardView: View {
                         Image(systemName: isFav ? "heart.fill" : "heart")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(isFav ? .red : .white)
-                            .frame(width: 34, height: 34)
-                            .background(.black.opacity(0.42), in: Circle())
+                            .frame(width: 36, height: 36)
+                            .background(.black.opacity(0.45), in: Circle())
+                            .frame(width: 44, height: 44)
+                            .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(12)
+                .padding(.leading, 12)
+                .padding(.trailing, 8)
+                .padding(.top, 8)
 
                 // Bottom-left time pill over cover
                 if let total = recipe.totalTimeMins {

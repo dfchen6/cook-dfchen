@@ -96,17 +96,19 @@ struct CachedCoverImage: View {
     @State private var didAttemptLoad = false
 
     var body: some View {
-        ZStack {
-            if let uiImage {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: contentMode)
-                    .transition(.opacity.animation(.easeOut(duration: 0.2)))
-            } else {
-                placeholder
+        Color.clear
+            .overlay {
+                if let uiImage {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: contentMode)
+                        .transition(.opacity.animation(.easeOut(duration: 0.2)))
+                } else {
+                    placeholder
+                }
             }
-        }
-        .task(id: urlString) {
+            .clipped()
+            .task(id: urlString) {
             guard let urlString, !urlString.isEmpty else {
                 uiImage = nil
                 didAttemptLoad = true
