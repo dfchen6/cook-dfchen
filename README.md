@@ -9,6 +9,7 @@ Bilingual (Chinese / English) personal recipe collection, private per-user resta
 - **Database**: Cloud Firestore (accessed exclusively from the server via `firebase-admin`; [firestore.rules](firestore.rules) denies direct client access)
 - **Storage**: Cloud Storage for Firebase (`recipes/**` public read / admin write; `restaurants/{uid}/**` owner-only via [storage.rules](storage.rules))
 - **Hosting**: Firebase App Hosting (`cook-dfchen` backend in `us-central1`, project `cook-copilot`, configured in [apphosting.yaml](apphosting.yaml))
+- **iOS Companion App**: Native SwiftUI (`iOS 17+`, [ios/Cook.xcodeproj](ios/Cook.xcodeproj)) with hands-free keep-awake Cooking Mode, smart step timers, Google Sign-In (`ASWebAuthenticationSession`), and offline disk caching via `/api/mobile/*`
 - **MCP**: Streamable HTTP MCP server at `/api/mcp` (`Authorization: Bearer <MCP_API_KEY>`)
 
 ## Local Development
@@ -66,4 +67,12 @@ Runtime secrets (`googleClientId`, `googleClientSecret`, `mcpApiKey`) are stored
 ```bash
 npx -y firebase-tools@latest apphosting:secrets:set <secretName> --project cook-copilot
 npx -y firebase-tools@latest apphosting:secrets:grantaccess <secretName> --backend cook-dfchen --project cook-copilot
+```
+
+## iOS App (`ios/`)
+
+See [ios/README.md](ios/README.md) for full details. To open and run on an iOS Simulator or physical iPhone:
+
+```bash
+open ios/Cook.xcodeproj
 ```
